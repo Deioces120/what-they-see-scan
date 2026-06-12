@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What They See - Installation Guide</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .hero {
+      text-align: center;
+      padding: 60px 20px 40px;
+      max-width: 700px;
+    }
+    .hero h1 {
+      font-size: 42px;
+      color: #fff;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .hero .subtitle {
+      font-size: 18px;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 30px;
+    }
+    .hero .badge {
+      display: inline-block;
+      background: rgba(78,205,196,0.15);
+      border: 1px solid rgba(78,205,196,0.3);
+      color: #4ecdc4;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .steps {
+      max-width: 700px;
+      width: 100%;
+      padding: 0 20px 60px;
+    }
+    .step {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 28px 30px;
+      margin-bottom: 20px;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    .step:hover {
+      border-color: rgba(78,205,196,0.3);
+      background: rgba(255,255,255,0.07);
+    }
+    .step-number {
+      position: absolute;
+      top: -14px;
+      left: 24px;
+      background: linear-gradient(45deg, #e94560, #c23152);
+      color: #fff;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(233,69,96,0.4);
+    }
+    .step h3 {
+      font-size: 18px;
+      color: #fff;
+      margin-bottom: 10px;
+      margin-top: 4px;
+    }
+    .step p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.7;
+      margin-bottom: 12px;
+    }
+    .step .url-box {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 14px;
+      color: #4ecdc4;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .step .url-box:hover {
+      background: rgba(78,205,196,0.1);
+      border-color: rgba(78,205,196,0.3);
+    }
+    .step .url-box .copy-hint {
+      margin-left: auto;
+      font-size: 11px;
+      color: rgba(255,255,255,0.3);
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .screenshot-placeholder {
+      background: rgba(0,0,0,0.2);
+      border: 2px dashed rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      margin: 12px 0;
+      color: rgba(255,255,255,0.3);
+      font-size: 13px;
+    }
+    .highlight {
+      background: rgba(78,205,196,0.1);
+      border-left: 3px solid #4ecdc4;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin: 12px 0;
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+    }
+    .highlight strong { color: #4ecdc4; }
+    .warning {
+      background: rgba(247,183,51,0.1);
+      border-left: 3px solid #f7b733;
+      padding: 12px 16px;
+      border-radius: 0 8px 8px 0;
+      margin: 12px 0;
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+    }
+    .warning strong { color: #f7b733; }
+    .success-box {
+      background: rgba(78,205,196,0.1);
+      border: 1px solid rgba(78,205,196,0.3);
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      max-width: 700px;
+      width: 100%;
+      margin-bottom: 60px;
+    }
+    .success-box h2 { color: #4ecdc4; font-size: 24px; margin-bottom: 8px; }
+    .success-box p { color: rgba(255,255,255,0.6); font-size: 14px; }
+    .step-images {
+      display: flex;
+      gap: 12px;
+      margin: 12px 0;
+      overflow-x: auto;
+    }
+    .step-images .img-placeholder {
+      min-width: 200px;
+      flex: 1;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 20px;
+      text-align: center;
+      color: rgba(255,255,255,0.3);
+      font-size: 12px;
+    }
+    .step-images .img-placeholder .icon { font-size: 28px; margin-bottom: 8px; }
+    .divider {
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, #e94560, #4ecdc4);
+      border-radius: 2px;
+      margin: 0 auto 30px;
+    }
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: rgba(255,255,255,0.3);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <h1>What They See</h1>
+    <p class="subtitle">Privacy & Security Scanner — Installation Guide</p>
+    <span class="badge">Chrome Extension • Manifest V3</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="steps">
+
+    <!-- Step 1 -->
+    <div class="step">
+      <div class="step-number">1</div>
+      <h3>Download the Extension</h3>
+      <p>Download or clone this repository to your computer. You can download it as a ZIP file from GitHub and extract it, or clone it using Git.</p>
+      <div class="url-box" onclick="copyToClipboard('git clone https://github.com/YOUR_USERNAME/what-they-see.git')">
+        <span>git clone https://github.com/YOUR_USERNAME/what-they-see.git</span>
+        <span class="copy-hint">click to copy</span>
+      </div>
+      <div class="highlight">
+        <strong>Tip:</strong> Make sure you remember where you saved the folder — you'll need to browse to it in Step 3.
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step">
+      <div class="step-number">2</div>
+      <h3>Open Chrome Extensions Page</h3>
+      <p>Open Google Chrome and navigate to the Extensions management page. You can do this by typing the following URL in your address bar:</p>
+      <div class="url-box" onclick="copyToClipboard('chrome://extensions/')">
+        <span>chrome://extensions/</span>
+        <span class="copy-hint">click to copy</span>
+      </div>
+      <div class="step-images">
+        <div class="img-placeholder">
+          <div class="icon">🔧</div>
+          Chrome Extensions Page
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step">
+      <div class="step-number">3</div>
+      <h3>Enable Developer Mode</h3>
+      <p>In the top-right corner of the Extensions page, you'll see a toggle labeled <strong>"Developer mode"</strong>. Turn it ON.</p>
+      <div class="warning">
+        <strong>Important:</strong> Developer mode must be enabled to install unpacked extensions. This is completely safe and is required for any extension not from the Chrome Web Store.
+      </div>
+      <div class="step-images">
+        <div class="img-placeholder">
+          <div class="icon">⚙️</div>
+          Toggle: Developer mode → ON
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step">
+      <div class="step-number">4</div>
+      <h3>Load the Extension</h3>
+      <p>After enabling Developer mode, three new buttons will appear at the top. Click <strong>"Load unpacked"</strong> and a file picker will open.</p>
+      <p>Navigate to the folder where you saved this extension (the folder containing <code style="color:#4ecdc4">manifest.json</code>, <code style="color:#4ecdc4">popup.html</code>, etc.), select the folder, and click <strong>"Select"</strong>.</p>
+      <div class="highlight">
+        <strong>What to look for:</strong> The folder you select should contain these files:<br>
+        <code style="color:#4ecdc4">manifest.json</code> &nbsp;|&nbsp; <code style="color:#4ecdc4">popup.html</code> &nbsp;|&nbsp; <code style="color:#4ecdc4">popup.js</code> &nbsp;|&nbsp; <code style="color:#4ecdc4">background.js</code> &nbsp;|&nbsp; <code style="color:#4ecdc4">content.js</code> &nbsp;|&nbsp; <code style="color:#4ecdc4">icon16.png</code>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="step">
+      <div class="step-number">5</div>
+      <h3>Pin the Extension</h3>
+      <p>The extension is now installed! To make it easily accessible, click the <strong>puzzle piece icon 🧩</strong> in Chrome's toolbar, find <strong>"What They See"</strong>, and click the <strong>pin icon 📌</strong> to pin it to your toolbar.</p>
+      <div class="step-images">
+        <div class="img-placeholder">
+          <div class="icon">📌</div>
+          Click puzzle icon → Pin the extension
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="step">
+      <div class="step-number">6</div>
+      <h3>Start Scanning</h3>
+      <p>Navigate to any website, click the <strong>"What They See"</strong> icon in your toolbar, and press <strong>"Start Security Scan"</strong>. The extension will analyze the page and show you a detailed privacy and security report.</p>
+      <div class="highlight">
+        <strong>That's it!</strong> The extension runs entirely in your browser — no data is sent to external servers. Your browsing stays private.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="success-box">
+    <h2>You're All Set!</h2>
+    <p>The extension is now installed and ready to protect your privacy.<br>
+    Visit any website and click the extension icon to see what they see about you.</p>
+  </div>
+
+  <footer>
+    What They See — Privacy & Security Scanner &bull; Chrome Extension
+  </footer>
+
+  <script>
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const boxes = document.querySelectorAll('.url-box');
+        boxes.forEach(box => {
+          if (box.querySelector('span').textContent === text) {
+            const hint = box.querySelector('.copy-hint');
+            const original = hint.textContent;
+            hint.textContent = 'copied!';
+            hint.style.color = '#4ecdc4';
+            setTimeout(() => {
+              hint.textContent = original;
+              hint.style.color = '';
+            }, 2000);
+          }
+        });
+      });
+    }
+  </script>
+</body>
+</html>

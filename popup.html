@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:;">
+  <title>What They See - Privacy Scanner</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      width: 580px;
+      min-height: 1000px;
+      color: #e0e0e0;
+    }
+    .header {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      padding: 22px 24px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .header h1 { color: #fff; font-size: 26px; margin-bottom: 4px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+    .header p { color: rgba(255,255,255,0.6); font-size: 14px; }
+
+    .url-bar {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin: 16px 20px 12px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+    }
+    .url-bar.active { display: flex; }
+    .url-lock { font-size: 14px; flex-shrink: 0; }
+    .url-details { flex: 1; min-width: 0; }
+    .url-domain { font-size: 15px; font-weight: 600; color: #4ecdc4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .url-full { font-size: 12px; color: rgba(255,255,255,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+    .url-status { font-size: 12px; padding: 4px 10px; border-radius: 4px; flex-shrink: 0; font-weight: 600; }
+    .url-status.secure { background: rgba(78,205,196,0.2); color: #4ecdc4; }
+    .url-status.insecure { background: rgba(255,75,75,0.2); color: #ff4b4b; }
+
+    .container { padding: 0 20px 20px; max-height: 940px; overflow-y: auto; }
+    .scan-button {
+      background: linear-gradient(45deg, #e94560, #c23152);
+      border: none; color: white; padding: 16px 32px; font-size: 17px;
+      border-radius: 12px; cursor: pointer; width: 100%; margin: 12px 0 16px;
+      box-shadow: 0 4px 15px rgba(233,69,96,0.4);
+      transition: all 0.3s ease; position: relative; overflow: hidden;
+      font-weight: 600; letter-spacing: 0.5px;
+    }
+    .scan-button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(233,69,96,0.6); }
+    .scan-button:active { transform: translateY(0); }
+    .scan-button:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
+    .scan-button.scanning { background: linear-gradient(45deg, #4ecdc4, #44a08d); cursor: not-allowed; }
+
+    .loading { display: none; text-align: center; margin: 20px 0; }
+    .spinner {
+      border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #4ecdc4;
+      border-radius: 50%; width: 36px; height: 36px;
+      animation: spin 1s linear infinite; margin: 0 auto 10px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .loading-text { color: rgba(255,255,255,0.7); font-size: 13px; }
+
+    .results {
+      background: rgba(255,255,255,0.05); border-radius: 12px;
+      padding: 20px; margin-top: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: none;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .tabs {
+      display: flex; margin-bottom: 16px;
+      background: rgba(0,0,0,0.2); border-radius: 10px;
+      padding: 4px; overflow-x: auto; gap: 2px;
+    }
+    .tab {
+      flex: 1; min-width: 90px; padding: 10px 8px; text-align: center;
+      background: transparent; border: none;
+      color: rgba(255,255,255,0.5); cursor: pointer;
+      border-radius: 8px; font-size: 13px; font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    .tab:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.05); }
+    .tab.active { background: rgba(78,205,196,0.2); color: #4ecdc4; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .score-card {
+      background: linear-gradient(135deg, rgba(78,205,196,0.15), rgba(68,160,141,0.1));
+      border: 1px solid rgba(78,205,196,0.3);
+      border-radius: 12px; padding: 22px; text-align: center; margin-bottom: 16px;
+    }
+    .score-ring {
+      width: 100px; height: 100px; border-radius: 50%; margin: 0 auto 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 34px; font-weight: 700; color: #fff;
+      position: relative;
+    }
+    .score-ring::before {
+      content: ''; position: absolute; inset: -3px; border-radius: 50%;
+      border: 3px solid rgba(78,205,196,0.3);
+    }
+    .score-label { font-size: 14px; color: rgba(255,255,255,0.6); }
+    .score-grade { font-size: 18px; font-weight: 700; margin-top: 4px; }
+
+    .result-section {
+      margin-bottom: 16px; padding-bottom: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .result-section:last-child { border-bottom: none; padding-bottom: 0; }
+    .section-title {
+      font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-title .icon { font-size: 18px; }
+    .section-content { font-size: 14px; line-height: 1.6; color: rgba(255,255,255,0.7); }
+
+    .metric {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .metric:last-child { border-bottom: none; }
+    .metric-label { color: rgba(255,255,255,0.6); font-size: 13px; }
+    .metric-value { font-weight: 600; color: #fff; font-size: 13px; }
+
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 4px;
+      font-size: 12px; font-weight: 600;
+    }
+    .badge-green { background: rgba(78,205,196,0.2); color: #4ecdc4; }
+    .badge-yellow { background: rgba(247,183,51,0.2); color: #f7b733; }
+    .badge-red { background: rgba(255,75,75,0.2); color: #ff4b4b; }
+    .badge-blue { background: rgba(69,183,209,0.2); color: #45b7d1; }
+    .badge-gray { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); }
+
+    .alert {
+      padding: 12px 14px; margin: 8px 0; border-radius: 8px;
+      font-size: 13px; line-height: 1.5;
+    }
+    .alert-danger { background: rgba(255,75,75,0.1); border-left: 3px solid #ff4b4b; color: #ff8a8a; }
+    .alert-warning { background: rgba(247,183,51,0.1); border-left: 3px solid #f7b733; color: #f7d070; }
+    .alert-info { background: rgba(69,183,209,0.1); border-left: 3px solid #45b7d1; color: #7dd3e8; }
+    .alert-success { background: rgba(78,205,196,0.1); border-left: 3px solid #4ecdc4; color: #7eddd4; }
+    .alert strong { display: block; margin-bottom: 3px; }
+
+    .domain-list { max-height: 300px; overflow-y: auto; }
+    .domain-item {
+      display: flex; align-items: center; gap: 8px; padding: 5px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 12px;
+    }
+    .domain-item:last-child { border-bottom: none; }
+    .domain-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+    .chart-row {
+      display: flex; align-items: center; gap: 10px; margin: 6px 0;
+    }
+    .chart-label { font-size: 13px; color: rgba(255,255,255,0.5); width: 100px; flex-shrink: 0; }
+    .chart-bar { flex: 1; height: 10px; background: rgba(255,255,255,0.08); border-radius: 5px; overflow: hidden; }
+    .chart-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
+    .chart-count { font-size: 13px; color: rgba(255,255,255,0.5); width: 40px; text-align: right; }
+
+    .timeline-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: rgba(255,255,255,0.5); }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .timeline-bar-container {
+      position: relative; height: 24px; background: rgba(255,255,255,0.05);
+      border-radius: 4px; overflow: hidden; margin-bottom: 6px;
+    }
+    .timeline-bar {
+      position: absolute; top: 2px; height: 20px;
+      border-radius: 3px; opacity: 0.7; min-width: 2px;
+    }
+    .timeline-labels { display: flex; justify-content: space-between; font-size: 9px; color: rgba(255,255,255,0.3); }
+
+    .rec-item {
+      display: flex; gap: 10px; padding: 10px; margin: 6px 0;
+      background: rgba(0,0,0,0.2); border-radius: 8px;
+    }
+    .rec-icon { font-size: 18px; flex-shrink: 0; }
+    .rec-content { flex: 1; }
+    .rec-title { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 3px; }
+    .rec-desc { font-size: 12px; color: rgba(255,255,255,0.5); }
+
+    .hidden { display: none !important; }
+
+    .tracker-notification {
+      background: rgba(247,183,51,0.1);
+      border: 1px solid rgba(247,183,51,0.3); border-radius: 10px;
+      padding: 12px; margin-bottom: 12px;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .notification-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .notification-close { margin-left: auto; background: none; border: none; cursor: pointer; font-size: 16px; color: #f7b733; }
+    .notification-body { font-size: 12px; color: #f7d070; }
+
+    .cookie-table { width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 8px; }
+    .cookie-table th { text-align: left; color: rgba(255,255,255,0.5); padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.1); font-weight: 500; }
+    .cookie-table td { padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.04); color: rgba(255,255,255,0.7); }
+
+    .vuln-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .vuln-card { padding: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; border-left: 3px solid; }
+    .vuln-card.high { border-color: #ff4b4b; }
+    .vuln-card.medium { border-color: #f7b733; }
+    .vuln-card.low { border-color: #45b7d1; }
+    .vuln-title { font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+    .vuln-desc { font-size: 11px; color: rgba(255,255,255,0.5); }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>What They See</h1>
+    <p>Privacy & Security Scanner</p>
+  </div>
+
+  <div id="url-bar" class="url-bar">
+    <span class="url-lock" id="url-lock-icon"></span>
+    <div class="url-details">
+      <div class="url-domain" id="url-domain"></div>
+      <div class="url-full" id="url-full"></div>
+    </div>
+    <span class="url-status" id="url-status"></span>
+  </div>
+
+  <div class="container">
+    <button id="scanBtn" class="scan-button">Start Security Scan</button>
+
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p class="loading-text">Analyzing website...</p>
+    </div>
+
+    <div id="tabs" class="tabs hidden">
+      <button class="tab active" data-tab="overview">Overview</button>
+      <button class="tab" data-tab="security">Security</button>
+      <button class="tab" data-tab="ssl">SSL</button>
+      <button class="tab" data-tab="headers">Headers</button>
+      <button class="tab" data-tab="privacy">Privacy</button>
+      <button class="tab" data-tab="cookies">Cookies</button>
+      <button class="tab" data-tab="threats">Threats</button>
+      <button class="tab" data-tab="network">Network</button>
+      <button class="tab" data-tab="fingerprinting">Finger</button>
+      <button class="tab" data-tab="analysis">Analysis</button>
+      <button class="tab" data-tab="timeline">Timeline</button>
+      <button class="tab" data-tab="recs">Tips</button>
+    </div>
+
+    <div id="results" class="results">
+      <div id="overview" class="tab-content active">
+        <div id="score-card" class="score-card">
+          <div class="score-ring" id="score-ring">--</div>
+          <div class="score-grade" id="score-grade"></div>
+          <div class="score-label">Security Score</div>
+        </div>
+        <div id="overview-content"></div>
+      </div>
+      <div id="security" class="tab-content"><div id="security-content"></div></div>
+      <div id="ssl" class="tab-content"><div id="ssl-content"></div></div>
+      <div id="headers" class="tab-content"><div id="headers-content"></div></div>
+      <div id="privacy" class="tab-content"><div id="privacy-content"></div></div>
+      <div id="cookies" class="tab-content"><div id="cookies-content"></div></div>
+      <div id="threats" class="tab-content"><div id="threats-content"></div></div>
+      <div id="network" class="tab-content"><div id="network-content"></div></div>
+      <div id="fingerprinting" class="tab-content"><div id="fingerprinting-content"></div></div>
+      <div id="analysis" class="tab-content"><div id="analysis-content"></div></div>
+      <div id="timeline" class="tab-content"><div id="timeline-content"></div></div>
+      <div id="recs" class="tab-content"><div id="recs-content"></div></div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
