@@ -192,7 +192,9 @@ This project is licensed under the GNU Affero General Public License v3.0 — se
 
 ## Commercial Licensing
 
-This project is available under the GNU AGPL v3 license. If you need a commercial license, proprietary integration, or custom development, please contact the author.
+This project is available under the GNU Affero General Public License v3.0 (AGPL-3.0).
+
+Organizations that require proprietary integration, closed-source distribution, custom features, or dedicated support may obtain a separate commercial license by contacting the author.
 
 ---
 
