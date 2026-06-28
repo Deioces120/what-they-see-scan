@@ -1,13 +1,23 @@
+importScripts('domains.js', 'scoring-weights.js');
+
 class PrivacyAnalyzer {
   constructor() {
     this.scanResults = new Map();
     this.networkRequests = new Map();
     this.securityHeaders = new Map();
     this.previousTrackers = new Map();
+    this.requestStartTimes = new Map();
     this.MAX_CACHE_SIZE = 50;
     this.MAX_NETWORK_ENTRIES = 500;
     this.privacyDatabase = this.initPrivacyDatabase();
     this.initEventListeners();
+    this.initSidePanel();
+  }
+
+  initSidePanel() {
+    if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+      chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+    }
   }
 
   initEventListeners() {
@@ -30,6 +40,11 @@ class PrivacyAnalyzer {
       }
     );
 
+    chrome.webRequest.onCompleted.addListener(
+      (details) => this.updateRequestDuration(details),
+      { urls: ["<all_urls>"] }
+    );
+
     chrome.tabs.onUpdated.addListener(
       (tabId, changeInfo) => {
         if (changeInfo.status === 'loading') this.cleanupTabData(tabId);
@@ -40,53 +55,12 @@ class PrivacyAnalyzer {
   }
 
   initPrivacyDatabase() {
-    return {
-      trackingDomains: [
-        'google-analytics.com', 'googletagmanager.com', 'ga.jspm.io',
-        'hotjar.com', 'crazyegg.com', 'mouseflow.com', 'fullstory.com',
-        'logrocket.com', 'amplitude.com', 'mixpanel.com', 'segment.com',
-        'facebook.com', 'facebook.net', 'fbcdn.net', 'instagram.com',
-        'twitter.com', 'linkedin.com', 'pinterest.com', 'tiktok.com',
-        'doubleclick.net', 'googlesyndication.com', 'googleadservices.com',
-        'amazon-adsystem.com', 'outbrain.com', 'taboola.com', 'criteo.com', 'media.net',
-        'branch.io', 'adjust.com', 'appsflyer.com', 'singular.net',
-        'newrelic.com', 'sentry.io', 'datadoghq.com', 'bugsnag.com',
-        'pubmatic.com', 'rubiconproject.com', 'openx.net', 'adnxs.com',
-        'casalemedia.com', 'indexexchange.com', 'sharethrough.com',
-        'teads.tv', 'moat.com', 'adsrvr.org', 'demdex.net',
-        'everesttech.net', 'bluekai.com', 'lotame.com', 'krxd.net',
-        'quantserve.com', 'scorecardresearch.com', 'chartbeat.com',
-        'optimizely.com', 'heap.io', 'pendo.io', 'kissmetrics.com'
-      ],
-      maliciousDomains: [
-        'coinhive.com', 'coin-hive.com', 'authedmine.com', 'crypto-loot.com',
-        'webminerpool.com', 'jsecoin.com', 'minergate.com', 'deepminer.net',
-        'coinimp.com', 'ppoi.org', 'monerominer.rocks', 'webminepool.com',
-        'miner.pr0gramm.com', 'minr.pw', 'webmr.cryptaloot.pro'
-      ],
-      fingerprintingPatterns: [
-        'fingerprint', 'canvas', 'webgl', 'audio', 'font',
-        'navigator.', 'screen.', 'timezone', 'language', 'platform'
-      ],
-      sensitiveDataPatterns: [
-        'password', 'creditcard', 'ssn', 'social-security', 'bank-account',
-        'routing-number', 'tax-id', 'passport', 'driver-license', 'medical',
-        'health', 'insurance', 'date-of-birth', 'birth-date'
-      ],
-      adNetworks: [
-        'googlesyndication.com', 'doubleclick.net', 'googleadservices.com',
-        'amazon-adsystem.com', 'outbrain.com', 'taboola.com',
-        'criteo.com', 'media.net', 'pubmatic.com', 'rubiconproject.com',
-        'openx.net', 'adnxs.com', 'casalemedia.com', 'indexexchange.com',
-        'sharethrough.com', 'teads.tv', 'spotxchange.com', 'moat.com',
-        'adsrvr.org', 'demdex.net', 'everesttech.net', 'bluekai.com',
-        'lotame.com', 'krxd.net', 'bombora.com', 'zoominfo.com'
-      ],
-      socialDomains: [
-        'facebook.com', 'facebook.net', 'fbcdn.net', 'twitter.com',
-        'instagram.com', 'linkedin.com', 'pinterest.com', 'tiktok.com',
-        'youtube.com', 'snapchat.com', 'reddit.com', 'tumblr.com'
-      ]
+    return self.__privacyDomains || {
+      trackingDomains: [],
+      maliciousDomains: [],
+      adNetworks: [],
+      socialDomains: [],
+      sensitiveDataPatterns: []
     };
   }
 
@@ -142,9 +116,10 @@ class PrivacyAnalyzer {
         name: details.url,
         type: details.type,
         startTime: requestInfo.relativeTime,
-        duration: Math.round(Math.random() * 500 + 50),
+        duration: 0,
         category: requestInfo.category
       });
+      this.requestStartTimes.set(details.requestId, { startTime: requestInfo.relativeTime, timelineIdx: requests.timeline.length - 1, tabId });
     } catch (error) {}
   }
 
@@ -409,89 +384,86 @@ class PrivacyAnalyzer {
   }
 
   calculatePrivacyScore(data) {
-    let score = 100;
+    const W = SCORING.privacy;
+    let score = W.base;
     const { basic, advanced, network, url } = data;
     try {
       if (network) {
-        score -= (network.tracking?.length || 0) * 4;
-        score -= (network.ads?.length || 0) * 3;
-        score -= (network.malicious?.length || 0) * 20;
-        score -= Math.max(0, (network.domains?.length || 0) - 10) * 2;
-        score -= (network.sensitive?.length || 0) * 5;
+        score += (network.tracking?.length || 0) * W.perTracking;
+        score += (network.ads?.length || 0) * W.perAd;
+        score += (network.malicious?.length || 0) * W.perMalicious;
+        score += Math.max(0, (network.domains?.length || 0) - W.domainThreshold) * W.domainExtra;
+        score += (network.sensitive?.length || 0) * W.perSensitive;
       }
       if (advanced) {
-        score -= (advanced.trackingPixels || 0) * 5;
-        score -= (advanced.fingerprintingAttempts || 0) * 10;
-        score -= (advanced.cryptominers?.length || 0) * 25;
+        score += (advanced.trackingPixels || 0) * W.perPixel;
+        score += (advanced.fingerprintingAttempts || 0) * W.perFingerprint;
+        score += (advanced.cryptominers?.length || 0) * W.perMiner;
         if (advanced.deepScanResults) {
           const ds = advanced.deepScanResults;
-          score -= (ds.cryptocurrency?.miners?.length || 0) * 20;
-          score -= (ds.keylogging?.patterns?.length || 0) * 15;
-          score -= (ds.formjacking?.issues?.length || 0) * 15;
-          score -= (ds.magecart?.issues?.length || 0) * 20;
-          score -= (ds.dataExfil?.patterns?.length || 0) * 10;
-          score -= (ds.xss?.patterns?.length || 0) * 5;
-          score -= (ds.evercookies?.issues?.length || 0) * 15;
-          score -= (ds.clipboard?.hasClipboardListeners ? 5 : 0);
-          score -= (ds.geolocation?.issues?.length || 0) * 5;
-          score -= (ds.mediaAccess?.issues?.length || 0) * 3;
-          score -= (ds.fingerprinting3?.vectors?.filter(v => v.available)?.length || 0) * 2;
-          score -= (ds.cookieSecurity?.trackingCookies || 0) * 2;
-          score -= (ds.adInjection?.patterns?.length || 0) * 5;
-          score -= (ds.shadowDOM?.count || 0) * 1;
-          score -= (ds.workerSpam?.workers?.length || 0) * 2;
-          score -= (ds.webAssembly?.available ? 3 : 0);
-          score -= (ds.battery?.available ? 2 : 0);
-          score -= (ds.speech?.available ? 2 : 0);
-          score -= (ds.bluetoothUSB?.issues?.length || 0) * 2;
-          score -= (ds.contacts?.available ? 5 : 0);
-          score -= (ds.faceDetection?.available ? 5 : 0);
-          score -= (ds.sensors?.sensors?.length || 0) * 3;
+          const d = W.deepScan;
+          score += (ds.cryptocurrency?.miners?.length || 0) * d.cryptoMiners;
+          score += (ds.keylogging?.patterns?.length || 0) * d.keylog;
+          score += (ds.formjacking?.issues?.length || 0) * d.formjacking;
+          score += (ds.magecart?.issues?.length || 0) * d.magecart;
+          score += (ds.dataExfil?.patterns?.length || 0) * d.dataExfil;
+          score += (ds.xss?.patterns?.length || 0) * d.xss;
+          score += (ds.evercookies?.issues?.length || 0) * d.evercookies;
+          score += (ds.clipboard?.hasClipboardListeners ? d.clipboard : 0);
+          score += (ds.geolocation?.issues?.length || 0) * d.geolocation;
+          score += (ds.mediaAccess?.issues?.length || 0) * d.mediaAccess;
+          score += (ds.fingerprinting3?.vectors?.filter(v => v.available)?.length || 0) * d.fingerprint3;
+          score += (ds.cookieSecurity?.trackingCookies || 0) * d.cookieTrack;
+          score += (ds.adInjection?.patterns?.length || 0) * d.adInjection;
+          score += (ds.shadowDOM?.count || 0) * d.shadowDOM;
+          score += (ds.workerSpam?.workers?.length || 0) * d.workerSpam;
+          score += (ds.bluetoothUSB?.issues?.length || 0) * d.bluetoothUSB;
+          score += (ds.contacts?.issues?.length > 0 ? d.contacts : 0);
+          score += (ds.faceDetection?.issues?.length > 0 ? d.faceDetection : 0);
         }
       }
       if (basic) {
-        score -= (basic.cookies?.tracking || 0) * 3;
-        score -= Math.max(0, (basic.scripts?.thirdParty?.length || 0) - 5) * 2;
+        score += (basic.cookies?.tracking || 0) * 3;
+        score += Math.max(0, (basic.scripts?.thirdParty?.length || 0) - 5) * 2;
       }
-      if (url?.startsWith('https://')) score += 5;
-      else score -= 20;
+      score += url?.startsWith('https://') ? W.https.bonus : W.https.penalty;
     } catch (error) {}
     return Math.max(0, Math.min(100, Math.round(score)));
   }
 
   calculateSecurityScore(data) {
-    let score = 50;
+    const W = SCORING.security;
+    let score = W.base;
     const { basic, network, url, advanced } = data;
     try {
-      if (url?.startsWith('https://')) score += 30;
-      else score -= 40;
+      score += url?.startsWith('https://') ? W.https.bonus : W.https.penalty;
       if (basic?.security) {
-        if (basic.security.csp) score += 20;
-        if (basic.security.hsts) score += 15;
-        if (basic.security.xFrame) score += 10;
-        if (basic.security.xContent) score += 5;
+        if (basic.security.csp) score += W.headers.csp;
+        if (basic.security.hsts) score += W.headers.hsts;
+        if (basic.security.xFrame) score += W.headers.xFrame;
+        if (basic.security.xContent) score += W.headers.xContent;
       }
       if (basic?.forms) {
-        if (basic.forms.insecure > 0) score -= 25;
-        if (basic.forms.secure > 0 && basic.forms.insecure === 0) score += 10;
+        if (basic.forms.insecure > 0) score += W.forms.insecure;
+        if (basic.forms.secure > 0 && basic.forms.insecure === 0) score += W.forms.secure;
       }
-      if (network?.malicious?.length > 0) score -= network.malicious.length * 30;
+      if (network?.malicious?.length > 0) score += network.malicious.length * W.perMalicious;
       if (advanced?.deepScanResults) {
         const ds = advanced.deepScanResults;
-        if (ds.csp?.hasCSP) score += 5;
-        if (ds.mixedContent?.count > 0) score -= ds.mixedContent.count * 3;
-        if (ds.sri?.withoutIntegrity > 5) score -= 5;
-        if (ds.xss?.patterns?.length > 3) score -= 10;
-        if (ds.domVulnerabilities?.patterns?.length > 3) score -= 8;
-        if (ds.sessionFixation?.issues?.length > 0) score -= 8;
-        if (ds.csrf?.issues?.length > 0) score -= 5;
-        if (ds.openRedirect?.issues?.length > 0) score -= 5;
-        if (ds.sqlInjection?.issues?.length > 0) score -= 10;
-        if (ds.keylogging?.patterns?.length > 2) score -= 15;
-        if (ds.formjacking?.issues?.length > 0) score -= 10;
-        if (ds.magecart?.issues?.length > 0) score -= 20;
-        if (ds.cryptocurrency?.miners?.length > 0) score -= 25;
-        if (ds.adInjection?.patterns?.length > 0) score -= 5;
+        const d = W.deepScan;
+        if (ds.csp?.hasCSP) score += d.cspBonus;
+        if (ds.mixedContent?.count > 0) score += ds.mixedContent.count * d.mixedContent;
+        if (ds.sri?.withoutIntegrity > 5) score += d.sri;
+        if (ds.xss?.patterns?.length > 5) score += d.xss;
+        if (ds.domVulnerabilities?.patterns?.length > 3) score += d.domVuln;
+        if (ds.sessionFixation?.issues?.length > 0) score += d.sessionFixation;
+        if (ds.csrf?.issues?.length > 0) score += d.csrf;
+        if (ds.openRedirect?.issues?.length > 0) score += d.openRedirect;
+        if (ds.keylogging?.patterns?.length > 3) score += d.keylog;
+        if (ds.formjacking?.issues?.length > 0) score += d.formjacking;
+        if (ds.magecart?.issues?.length > 0) score += d.magecart;
+        if (ds.cryptocurrency?.miners?.length > 0) score += d.cryptoMiners;
+        if (ds.adInjection?.patterns?.length > 0) score += d.adInjection;
       }
     } catch (error) {}
     return Math.max(0, Math.min(100, Math.round(score)));
@@ -633,9 +605,9 @@ class PrivacyAnalyzer {
         }
         if (ds.sqlInjection?.issues?.length > 0) {
           threats.push({
-            type: 'sql_injection_pattern', severity: 'high',
-            description: 'SQL injection patterns found in URL parameters',
-            recommendation: 'This may indicate attempted injection attacks',
+            type: 'sql_injection_pattern', severity: 'low',
+            description: 'Suspicious SQL-like keywords found in URL parameters (may be false positive)',
+            recommendation: 'This is a pattern match, not a confirmed vulnerability',
             category: 'security'
           });
         }
@@ -808,7 +780,7 @@ class PrivacyAnalyzer {
           recs.push({ priority: 'medium', action: 'Monitor CPU usage', reason: 'Excessive web workers detected' });
         }
         if (ds.webAssembly?.available) {
-          recs.push({ priority: 'low', action: 'Monitor CPU usage', reason: 'WebAssembly available - could be used for cryptomining' });
+          recs.push({ priority: 'low', action: 'Note: WebAssembly available', reason: 'WebAssembly is available (used by legitimate apps like games, video editors)' });
         }
         if (ds.contacts?.available) {
           recs.push({ priority: 'medium', action: 'Deny contacts permission', reason: 'Contacts API available' });
@@ -851,10 +823,11 @@ class PrivacyAnalyzer {
   }
 
   categorizeDomain(domain) {
-    if (['google-analytics.com', 'googletagmanager.com', 'hotjar.com', 'mixpanel.com', 'amplitude.com', 'segment.com', 'heap.io', 'pendo.io'].some(d => domain.includes(d))) return 'analytics';
-    if (['googlesyndication.com', 'doubleclick.net', 'googleadservices.com', 'outbrain.com', 'taboola.com', 'criteo.com', 'pubmatic.com', 'rubiconproject.com', 'openx.net', 'adnxs.com'].some(d => domain.includes(d))) return 'advertising';
-    if (['facebook.com', 'facebook.net', 'twitter.com', 'instagram.com', 'linkedin.com', 'youtube.com', 'tiktok.com'].some(d => domain.includes(d))) return 'social';
-    if (['cloudflare.com', 'amazonaws.com', 'cloudfront.net', 'jsdelivr.net'].some(d => domain.includes(d))) return 'essential';
+    const domains = self.__privacyDomains || {};
+    if ((domains.analyticsDomains || []).some(d => domain.includes(d))) return 'analytics';
+    if ((domains.adNetworks || []).some(d => domain.includes(d))) return 'advertising';
+    if ((domains.socialDomains || []).some(d => domain.includes(d))) return 'social';
+    if ((domains.essentialDomains || []).some(d => domain.includes(d))) return 'essential';
     return 'unknown';
   }
 
@@ -875,28 +848,27 @@ class PrivacyAnalyzer {
   }
 
   isCDN(domain) {
-    return ['cloudflare.com', 'amazonaws.com', 'cloudfront.net', 'jsdelivr.net', 'unpkg.com', 'cdnjs.cloudflare.com', 'googleapis.com'].some(c => domain.includes(c));
+    const domains = self.__privacyDomains || {};
+    return (domains.essentialDomains || []).some(c => domain.includes(c));
   }
 
   detectAnalyticsTool(domain) {
-    const tools = {
-      'Google Analytics': ['google-analytics.com', 'googletagmanager.com'],
-      'Facebook Pixel': ['facebook.com', 'facebook.net'],
-      'Hotjar': ['hotjar.com'],
-      'Mixpanel': ['mixpanel.com'],
-      'Segment': ['segment.com', 'segment.io'],
-      'Adobe Analytics': ['omtrdc.net', 'demdex.net'],
-      'Yandex Metrica': ['mc.yandex.ru'],
-      'Amplitude': ['amplitude.com'],
-      'FullStory': ['fullstory.com'],
-      'LogRocket': ['logrocket.com'],
-      'Heap': ['heap.io'],
-      'Pendo': ['pendo.io'],
-      'CrazyEgg': ['crazyegg.com'],
-      'MouseFlow': ['mouseflow.com']
-    };
-    for (const [tool, domains] of Object.entries(tools)) {
-      if (domains.some(d => domain.includes(d))) return tool;
+    const domains = self.__privacyDomains || {};
+    const analyticsDomains = domains.analyticsDomains || [];
+    if (analyticsDomains.some(d => domain.includes(d))) {
+      if (domain.includes('google-analytics') || domain.includes('googletagmanager')) return 'Google Analytics';
+      if (domain.includes('facebook')) return 'Facebook Pixel';
+      if (domain.includes('hotjar')) return 'Hotjar';
+      if (domain.includes('mixpanel')) return 'Mixpanel';
+      if (domain.includes('segment')) return 'Segment';
+      if (domain.includes('amplitude')) return 'Amplitude';
+      if (domain.includes('fullstory')) return 'FullStory';
+      if (domain.includes('logrocket')) return 'LogRocket';
+      if (domain.includes('heap')) return 'Heap';
+      if (domain.includes('pendo')) return 'Pendo';
+      if (domain.includes('crazyegg')) return 'CrazyEgg';
+      if (domain.includes('mouseflow')) return 'MouseFlow';
+      return 'Analytics';
     }
     return null;
   }
@@ -904,9 +876,22 @@ class PrivacyAnalyzer {
   containsSensitiveData(url) {
     try {
       const lower = url.toLowerCase();
-      return this.privacyDatabase.sensitiveDataPatterns.some(p => lower.includes(p));
+      const patterns = self.__privacyDomains?.sensitiveDataPatterns || [];
+      return patterns.some(p => lower.includes(p));
     } catch (e) {
       return false;
+    }
+  }
+
+  updateRequestDuration(details) {
+    const startInfo = this.requestStartTimes.get(details.requestId);
+    if (!startInfo) return;
+    this.requestStartTimes.delete(details.requestId);
+    const requests = this.networkRequests.get(startInfo.tabId);
+    if (!requests) return;
+    const entry = requests.timeline[startInfo.timelineIdx];
+    if (entry) {
+      entry.duration = Math.max(1, Date.now() - requests.startTime - entry.startTime);
     }
   }
 

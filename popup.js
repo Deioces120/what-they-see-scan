@@ -19,6 +19,13 @@ class PrivacyScanner {
     document.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
     });
+    const sidePanelBtn = document.getElementById('openSidePanel');
+    if (sidePanelBtn) {
+      sidePanelBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (chrome.sidePanel) chrome.sidePanel.open({ windowId: chrome.windows.WINDOW_ID_CURRENT });
+      });
+    }
   }
 
   switchTab(tabName) {
@@ -72,6 +79,11 @@ class PrivacyScanner {
       this.loading.style.display = 'block';
       this.results.style.display = 'none';
       this.tabs.classList.add('hidden');
+
+      this.threatModel = await this._loadThreatModel();
+      if (!this.threatModel) {
+        this.threatModel = await this._showThreatModelDialog();
+      }
 
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       this.currentTab = tab;
@@ -236,6 +248,10 @@ class PrivacyScanner {
     const securityScore = this.calculateSecurityScore();
     const grade = this.getScoreGrade(securityScore);
 
+    if (this.threatModel && this.scanData._threatPenalty) {
+      this.scanData._adjustedScore = Math.max(0, securityScore - this.scanData._threatPenalty);
+    }
+
     const ring = document.getElementById('score-ring');
     ring.textContent = securityScore;
     if (securityScore >= 80) ring.style.background = 'rgba(78,205,196,0.3)';
@@ -257,6 +273,30 @@ class PrivacyScanner {
     this.populateAnalysis();
     this.populateTimeline();
     this.populateRecommendations();
+
+    const domain = this._extractDomain(this.scanData.url || '');
+    const prevScan = await this._loadPreviousScan(domain);
+    this._saveScanResults(domain, this.scanData);
+    if (prevScan) {
+      const diffHtml = this._renderPrivacyDiff(prevScan, {
+        score: securityScore,
+        trackerCount: (this.scanData.network?.tracking?.length || 0) + (this.scanData.basic?.cookies?.tracking || 0),
+        hasCSP: this.scanData.basic?.security?.csp || false,
+        hasHSTS: this.scanData.basic?.security?.hsts || false
+      });
+      const overviewContent = document.getElementById('overview-content');
+      if (diffHtml && overviewContent) overviewContent.insertAdjacentHTML('afterbegin', diffHtml);
+    }
+
+    const storyHtml = this._generateNetworkStory(this.scanData.network?.timeline);
+    const networkContent = document.getElementById('network-content');
+    if (storyHtml && networkContent) networkContent.insertAdjacentHTML('afterbegin', storyHtml);
+
+    const exportHtml = `<div style="margin-top:12px"><button class="export-btn" id="exportBtn">&#128230; Export Evidence Pack</button></div>`;
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.insertAdjacentHTML('beforeend', exportHtml);
+    document.getElementById('exportBtn').addEventListener('click', () => this._exportEvidencePack());
+
     this.results.style.display = 'block';
     this.tabs.classList.remove('hidden');
   }
@@ -272,87 +312,101 @@ class PrivacyScanner {
 
   calculateSecurityScore() {
     if (!this.scanData) return 0;
-    let score = 50;
+    const W = SCORING.popup;
+    let score = W.base;
     const { basic, advanced, network, url } = this.scanData;
     try {
-      if (url?.startsWith('https://')) score += 20; else score -= 30;
+      score += url?.startsWith('https://') ? W.https.bonus : W.https.penalty;
       if (basic?.forms) {
-        if (basic.forms.secure > 0 && basic.forms.insecure === 0) score += 15;
-        else if (basic.forms.insecure > 0) score -= 20;
+        if (basic.forms.secure > 0 && basic.forms.insecure === 0) score += W.forms.secure;
+        else if (basic.forms.insecure > 0) score += W.forms.insecure;
       }
       if (basic?.scripts?.thirdParty) {
         const count = basic.scripts.thirdParty.length;
-        if (count < 5) score += 10; else if (count > 15) score -= 15;
+        const tp = W.thirdParty;
+        if (count < 3) score += tp.low;
+        else if (count < 10) score += tp.mid;
+        else if (count > 20) score += tp.veryHigh;
+        else if (count > 10) score += tp.high;
       }
       if (basic?.cookies) {
-        if (basic.cookies.tracking < 3) score += 10; else score -= 10;
+        const ck = W.cookies;
+        if (basic.cookies.tracking === 0) score += ck.none;
+        else if (basic.cookies.tracking < 3) score += ck.low;
+        else if (basic.cookies.tracking > 10) score += ck.veryHigh;
+        else if (basic.cookies.tracking > 5) score += ck.high;
       }
       if (basic?.security) {
-        if (basic.security.csp) score += 15;
-        if (basic.security.hsts) score += 10;
-        if (basic.security.xFrame) score += 5;
+        if (basic.security.csp) score += W.headers.csp;
+        if (basic.security.hsts) score += W.headers.hsts;
+        if (basic.security.xFrame) score += W.headers.xFrame;
+        if (basic.security.xContent) score += W.headers.xContent;
       }
       if (advanced) {
-        score -= (advanced.trackingPixels || 0) * 5;
-        score -= (advanced.fingerprintingAttempts || 0) * 8;
-        score -= (advanced.cryptominers || []).length * 25;
+        score += (advanced.trackingPixels || 0) * W.perPixel;
+        score += (advanced.fingerprintingAttempts || 0) * W.perFingerprint;
+        score += (advanced.cryptominers || []).length * W.perMiner;
+        score += (advanced.adNetworks?.length || 0) * W.perAd;
+        score += (advanced.socialWidgets || 0) * W.perSocial;
         if (advanced.deepScanResults) {
           const ds = advanced.deepScanResults;
-          if (ds.csp?.hasCSP) score += 5;
-          if (ds.mixedContent?.count > 0) score -= ds.mixedContent.count * 3;
-          if (ds.sri?.withoutIntegrity > 5) score -= 5;
-          if (ds.xss?.patterns?.length > 3) score -= 10;
-          if (ds.keylogging?.patterns?.length > 2) score -= 15;
-          if (ds.formjacking?.issues?.length > 0) score -= 10;
-          if (ds.magecart?.issues?.length > 0) score -= 20;
-          if (ds.cryptocurrency?.miners?.length > 0) score -= 25;
-          if (ds.cookieSecurity?.insecureCookies > 3) score -= 5;
-          if (ds.cookieSecurity?.trackingCookies > 5) score -= 5;
-          if (ds.domVulnerabilities?.patterns?.length > 3) score -= 8;
-          if (ds.dataExfil?.patterns?.length > 2) score -= 10;
-          if (ds.adInjection?.patterns?.length > 0) score -= 5;
-          if (ds.sessionFixation?.issues?.length > 0) score -= 8;
-          if (ds.csrf?.issues?.length > 0) score -= 5;
-          if (ds.openRedirect?.issues?.length > 0) score -= 5;
-          if (ds.autofill?.issues?.length > 2) score -= 3;
-          if (ds.shadowDOM?.count > 3) score -= 3;
-          if (ds.webWorkers?.issues?.length > 2) score -= 3;
-          if (ds.webAssembly?.available) score -= 2;
-          if (ds.fingerprint2?.issues?.length > 0) score -= 5;
-          if (ds.canvas2?.attempts > 2) score -= 5;
-          if (ds.webgl2?.available) score -= 3;
-          if (ds.audio2?.attempts > 2) score -= 5;
-          if (ds.font2?.attempts > 2) score -= 3;
-          if (ds.screen2?.issues?.length > 0) score -= 3;
-          if (ds.navigator2?.issues?.length > 0) score -= 3;
-          if (ds.evercookies?.issues?.length > 0) score -= 8;
-          if (ds.cacheTiming?.issues?.length > 0) score -= 5;
-          if (ds.historySniffing?.issues?.length > 0) score -= 3;
-          if (ds.battery?.available) score -= 2;
-          if (ds.connection?.available) score -= 1;
-          if (ds.speech?.available) score -= 2;
-          if (ds.bluetoothUSB?.issues?.length > 0) score -= 2;
-          if (ds.mediaAccess?.issues?.length > 0) score -= 2;
-          if (ds.geolocation?.issues?.length > 0) score -= 3;
-          if (ds.clipboard?.hasClipboardListeners) score -= 3;
-          if (ds.permissions?.issues?.length > 0) score -= 2;
-          if (ds.webrtc?.available) score -= 2;
-          if (ds.serviceWorker?.registered) score -= 1;
-          if (ds.nfc?.available) score -= 1;
-          if (ds.serial?.available) score -= 1;
-          if (ds.usb?.available) score -= 1;
-          if (ds.hid?.available) score -= 1;
-          if (ds.contacts?.available) score -= 3;
-          if (ds.faceDetection?.available) score -= 3;
-          if (ds.sensors?.sensors?.length > 0) score -= 2;
-          if (ds.workerSpam?.workers?.length > 3) score -= 3;
-          if (ds.cryptoMining?.miners?.length > 0) score -= 15;
-          if (ds.fingerprinting3?.vectors?.length > 12) score -= 5;
+          const d = W.deepScan;
+          if (ds.csp?.hasCSP) score += d.cspBonus;
+          if (ds.mixedContent?.count > 0) score += ds.mixedContent.count * d.mixedContent;
+          if (ds.sri?.withoutIntegrity > 5) score += d.sri;
+          if (ds.xss?.patterns?.length > 5) score += d.xssHigh;
+          if (ds.xss?.patterns?.length > 2) score += d.xssLow;
+          if (ds.keylogging?.patterns?.length > 3) score += d.keylogHigh;
+          if (ds.keylogging?.patterns?.length > 0) score += d.keylogLow;
+          if (ds.formjacking?.issues?.length > 0) score += d.formjacking;
+          if (ds.magecart?.issues?.length > 0) score += d.magecart;
+          if (ds.cryptocurrency?.miners?.length > 0) score += d.cryptoMiners;
+          if (ds.cookieSecurity?.trackingCookies > 5) score += d.cookieTrackHigh;
+          if (ds.cookieSecurity?.trackingCookies > 0) score += d.cookieTrackLow;
+          if (ds.domVulnerabilities?.patterns?.length > 3) score += d.domVulnHigh;
+          if (ds.domVulnerabilities?.patterns?.length > 0) score += d.domVulnLow;
+          if (ds.dataExfil?.patterns?.length > 2) score += d.dataExfilHigh;
+          if (ds.dataExfil?.patterns?.length > 0) score += d.dataExfilLow;
+          if (ds.adInjection?.patterns?.length > 0) score += d.adInjection;
+          if (ds.sessionFixation?.issues?.length > 0) score += d.sessionFixation;
+          if (ds.csrf?.issues?.length > 0) score += d.csrf;
+          if (ds.openRedirect?.issues?.length > 0) score += d.openRedirect;
+          if (ds.autofill?.issues?.length > 2) score += d.autofill;
+          if (ds.shadowDOM?.count > 3) score += d.shadowDOM;
+          if (ds.webWorkers?.issues?.length > 2) score += d.webWorkers;
+          if (ds.fingerprint2?.issues?.length > 0) score += d.fingerprint2;
+          if (ds.canvas2?.attempts > 2) score += d.canvas2High;
+          if (ds.canvas2?.attempts > 0) score += d.canvas2Low;
+          if (ds.audio2?.attempts > 2) score += d.audio2High;
+          if (ds.audio2?.attempts > 0) score += d.audio2Low;
+          if (ds.font2?.attempts > 2) score += d.font2;
+          if (ds.screen2?.issues?.length > 0) score += d.screen2;
+          if (ds.navigator2?.issues?.length > 0) score += d.navigator2;
+          if (ds.evercookies?.issues?.length > 0) score += d.evercookies;
+          if (ds.cacheTiming?.issues?.length > 0) score += d.cacheTiming;
+          if (ds.historySniffing?.issues?.length > 0) score += d.historySniffing;
+          if (ds.mediaAccess?.issues?.length > 0) score += d.mediaAccess;
+          if (ds.geolocation?.issues?.length > 0) score += d.geolocation;
+          if (ds.clipboard?.hasClipboardListeners) score += d.clipboard;
+          if (ds.permissions?.issues?.length > 0) score += d.permissions;
+          if (ds.workerSpam?.workers?.length > 3) score += d.workerSpam;
+          if (ds.cryptoMining?.miners?.length > 0) score += d.cryptoMining;
+          if (ds.fingerprinting3?.vectors?.filter(v => v.available)?.length > 12) score += d.fingerprint3High;
+          if (ds.fingerprinting3?.vectors?.filter(v => v.available)?.length > 6) score += d.fingerprint3Low;
+          if (ds.webrtc?.issues?.some(i => i.type === 'webrtc_ip_leak')) score += d.bluetoothUSB;
+          if (ds.cryptoMining?.miners?.length > 0 && ds.webAssembly?.available) score += d.bluetoothUSB;
+          if (ds.contacts?.issues?.length > 0) score += d.permissions;
+          if (ds.faceDetection?.issues?.length > 0) score += d.permissions;
+          if (ds.bluetoothUSB?.issues?.length > 0) score += d.bluetoothUSB;
         }
       }
       if (network) {
-        score -= (network.tracking || []).length * 3;
-        score -= (network.ads || []).length * 2;
+        const nw = W.network;
+        score += (network.tracking || []).length * nw.tracking;
+        score += (network.ads || []).length * nw.ad;
+        score += (network.social || []).length * nw.social;
+        score += (network.analytics || []).length * nw.analytics;
+        score += Math.max(0, (network.domains?.length || 0) - nw.domainThreshold) * nw.domainExtra;
       }
     } catch (error) {}
     return Math.max(0, Math.min(100, Math.round(score)));
@@ -360,6 +414,7 @@ class PrivacyScanner {
 
   populateOverview(score) {
     const content = document.getElementById('overview-content');
+    if (!content) return;
     const { basic, network, advanced, deep, ai } = this.scanData;
     const totalTrackers = (network?.tracking?.length || 0) + (basic?.cookies?.tracking || 0);
     const totalThirdParty = (basic?.scripts?.thirdParty?.length || 0) + (network?.ads?.length || 0);
@@ -439,6 +494,7 @@ class PrivacyScanner {
 
   populateSecurity() {
     const content = document.getElementById('security-content');
+    if (!content) return;
     const { basic, url, advanced } = this.scanData;
     const isHttps = url?.startsWith('https://');
     const security = basic?.security || {};
@@ -514,6 +570,7 @@ class PrivacyScanner {
 
   populatePrivacy() {
     const content = document.getElementById('privacy-content');
+    if (!content) return;
     const { basic, network, advanced } = this.scanData;
     const analyticsList = (basic?.analytics?.tools || []);
     const storage = advanced?.storage || {};
@@ -545,7 +602,7 @@ class PrivacyScanner {
           <div class="metric"><span class="metric-label">Total Cookies</span><span class="metric-value">${ds.cookieSecurity?.totalCookies || basic?.cookies?.total || 0}</span></div>
           <div class="metric"><span class="metric-label">Tracking Cookies</span><span class="metric-value"><span class="badge ${(ds.cookieSecurity?.trackingCookies || basic?.cookies?.tracking || 0) > 5 ? 'badge-red' : 'badge-green'}">${ds.cookieSecurity?.trackingCookies || basic?.cookies?.tracking || 0}</span></span></div>
           <div class="metric"><span class="metric-label">Third-party Cookies</span><span class="metric-value">${basic?.cookies?.thirdParty || 0}</span></div>
-          <div class="metric"><span class="metric-label">Insecure Cookies</span><span class="metric-value"><span class="badge ${(ds.cookieSecurity?.insecureCookies || 0) > 0 ? 'badge-yellow' : 'badge-green'}">${ds.cookieSecurity?.insecureCookies || 0}</span></span></div>
+          <div class="metric"><span class="metric-label">Note</span><span class="metric-value"><span class="badge badge-gray">Check response headers for Secure/HttpOnly flags</span></span></div>
           ${cookieIssues.length > 0 ? `<div class="alert alert-warning" style="margin-top:6px"><strong>Cookie Issues</strong>${cookieIssues.slice(0, 8).map(i => `<div>&bull; ${this._esc(i.type)}${i.cookie ? ': ' + this._esc(i.cookie) : ''}</div>`).join('')}</div>` : ''}
           ${evercookieIssues.length > 0 ? `<div class="alert alert-danger" style="margin-top:6px"><strong>Evercookie Detected</strong>Super-persistent tracking cookies found.</div>` : ''}
           ${cookieSyncIssues.length > 0 ? `<div class="alert alert-warning" style="margin-top:6px"><strong>Cookie Sync</strong>Cross-domain cookie synchronization detected.</div>` : ''}
@@ -598,6 +655,7 @@ class PrivacyScanner {
 
   populateThreats() {
     const content = document.getElementById('threats-content');
+    if (!content) return;
     const { ai, advanced } = this.scanData;
     const threats = ai?.threats || [];
     const ds = advanced?.deepScanResults || {};
@@ -665,6 +723,7 @@ class PrivacyScanner {
 
   populateNetwork() {
     const content = document.getElementById('network-content');
+    if (!content) return;
     const { network, basic } = this.scanData;
     const domains = network?.domains || [];
     const uniqueDomains = [...new Set(domains)];
@@ -723,6 +782,7 @@ class PrivacyScanner {
 
   populateAnalysis() {
     const content = document.getElementById('analysis-content');
+    if (!content) return;
     const { ai, basic, network, advanced } = this.scanData;
     const privacyScore = ai?.privacyScore || 50;
     const riskLevel = ai?.riskLevel || 'unknown';
@@ -860,6 +920,7 @@ class PrivacyScanner {
 
   populateTimeline() {
     const content = document.getElementById('timeline-content');
+    if (!content) return;
     const { network } = this.scanData;
     const timeline = network?.timeline || [];
     if (timeline.length === 0) {
@@ -893,6 +954,7 @@ class PrivacyScanner {
 
   populateRecommendations() {
     const content = document.getElementById('recs-content');
+    if (!content) return;
     const { ai, advanced } = this.scanData;
     const recs = ai?.recommendations || [];
     const ds = advanced?.deepScanResults || {};
@@ -997,6 +1059,7 @@ class PrivacyScanner {
 
   populateSSL() {
     const content = document.getElementById('ssl-content');
+    if (!content) return;
     const { deep, url, permissions } = this.scanData;
     const ssl = deep?.ssl || {};
     const secHeaders = permissions?.main_frame || {};
@@ -1050,6 +1113,7 @@ class PrivacyScanner {
 
   populateHeaders() {
     const content = document.getElementById('headers-content');
+    if (!content) return;
     const { permissions } = this.scanData;
     const secHeaders = permissions?.main_frame || {};
 
@@ -1108,6 +1172,7 @@ class PrivacyScanner {
 
   populateCookies() {
     const content = document.getElementById('cookies-content');
+    if (!content) return;
     const { basic, deep } = this.scanData;
     const cookies = deep?.cookieDetails || [];
     const cookieSummary = basic?.cookies || {};
@@ -1116,14 +1181,11 @@ class PrivacyScanner {
     if (cookies.length > 0) {
       cookieTableHtml = `
         <table class="cookie-table">
-          <thead><tr><th>Name</th><th>Secure</th><th>HttpOnly</th><th>SameSite</th><th>Tracking</th></tr></thead>
+          <thead><tr><th>Name</th><th>Tracking</th></tr></thead>
           <tbody>
             ${cookies.slice(0, 30).map(c => `
               <tr>
-                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${this._escAttr(c.name)}">${this._esc(c.name)}</td>
-                <td>${c.secure ? '<span class="badge badge-green">Yes</span>' : '<span class="badge badge-red">No</span>'}</td>
-                <td>${c.httpOnly ? '<span class="badge badge-green">Yes</span>' : '<span class="badge badge-red">No</span>'}</td>
-                <td><span class="badge badge-gray">${c.sameSite || 'None'}</span></td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${this._escAttr(c.name)}">${this._esc(c.name)}</td>
                 <td>${c.hasTrackingPattern ? '<span class="badge badge-red">Yes</span>' : '<span class="badge badge-green">No</span>'}</td>
               </tr>
             `).join('')}
@@ -1133,10 +1195,6 @@ class PrivacyScanner {
       `;
     }
 
-    const insecureCookies = cookies.filter(c => !c.secure).length;
-    const noHttpOnly = cookies.filter(c => !c.httpOnly).length;
-    const noSameSite = cookies.filter(c => !c.sameSite || c.sameSite === 'none').length;
-
     content.innerHTML = `
       <div class="result-section">
         <div class="section-title"><span class="icon">&#127850;</span> Cookie Summary</div>
@@ -1144,9 +1202,7 @@ class PrivacyScanner {
           <div class="metric"><span class="metric-label">Total Cookies</span><span class="metric-value">${cookieSummary.total || 0}</span></div>
           <div class="metric"><span class="metric-label">Tracking Cookies</span><span class="metric-value"><span class="badge ${(cookieSummary.tracking || 0) > 5 ? 'badge-red' : 'badge-green'}">${cookieSummary.tracking || 0}</span></span></div>
           <div class="metric"><span class="metric-label">Third-party Cookies</span><span class="metric-value">${cookieSummary.thirdParty || 0}</span></div>
-          <div class="metric"><span class="metric-label">Insecure (No Secure flag)</span><span class="metric-value"><span class="badge ${insecureCookies > 0 ? 'badge-red' : 'badge-green'}">${insecureCookies}</span></span></div>
-          <div class="metric"><span class="metric-label">JS-accessible (No HttpOnly)</span><span class="metric-value"><span class="badge ${noHttpOnly > 0 ? 'badge-yellow' : 'badge-green'}">${noHttpOnly}</span></span></div>
-          <div class="metric"><span class="metric-label">No SameSite Policy</span><span class="metric-value"><span class="badge ${noSameSite > 0 ? 'badge-yellow' : 'badge-green'}">${noSameSite}</span></span></div>
+          <div class="alert alert-info" style="margin-top:8px"><strong>Note:</strong> Secure, HttpOnly, and SameSite flags cannot be read from JavaScript. Check server response headers for accurate cookie security attributes.</div>
         </div>
       </div>
       <div class="result-section">
@@ -1160,6 +1216,7 @@ class PrivacyScanner {
 
   populateFingerprinting() {
     const content = document.getElementById('fingerprinting-content');
+    if (!content) return;
     const { deep, advanced } = this.scanData;
     const fp = deep?.fingerprintingDetails || {};
     const fpAttempts = advanced?.fingerprintingAttempts || 0;
@@ -1418,9 +1475,7 @@ class PrivacyScanner {
         const parts = c.split('=');
         const name = parts[0].trim();
         result.cookieDetails.push({
-          name, secure: c.includes('Secure'), httpOnly: c.includes('HttpOnly'),
-          sameSite: (c.match(/SameSite=([^;]+)/i) || [])[1] || null,
-          hasTrackingPattern: ['_ga','_gid','_gat','_fbp','_fbc','_hjid','__utma','utm_','_clck','_pk_','_uetsid','_uetvid','NID','1P_JAR','SID','HSID','SSID','APISID','SAPISID'].some(p => name.includes(p))
+          name, hasTrackingPattern: ['_ga','_gid','_gat','_fbp','_fbc','_hjid','__utma','utm_','_clck','_pk_','_uetsid','_uetvid','NID','1P_JAR','SID','HSID','SSID','APISID','SAPISID'].some(p => name.includes(p))
         });
       });
 
@@ -1597,6 +1652,237 @@ class PrivacyScanner {
     } catch (error) {}
     return result;
   }
-}
 
-document.addEventListener('DOMContentLoaded', () => { new PrivacyScanner(); });
+  async _loadThreatModel() {
+    try {
+      const result = await chrome.storage.local.get('threatModel');
+      return result.threatModel || null;
+    } catch (e) { return null; }
+  }
+
+  async _showThreatModelDialog() {
+    return new Promise(resolve => {
+      const overlay = document.getElementById('threat-overlay');
+      if (!overlay) { resolve(null); return; }
+      overlay.classList.add('active');
+      const options = overlay.querySelectorAll('.threat-option');
+      const skip = document.getElementById('threat-skip');
+      const cleanup = async (model) => {
+        overlay.classList.remove('active');
+        if (model) {
+          try { await chrome.storage.local.set({ threatModel: model }); } catch (e) {}
+        }
+        resolve(model);
+      };
+      options.forEach(btn => {
+        btn.addEventListener('click', () => cleanup(btn.dataset.model), { once: true });
+      });
+      skip.addEventListener('click', () => cleanup(null), { once: true });
+    });
+  }
+
+  _applyThreatModel(scanData) {
+    if (!this.threatModel || !SCORING?.threatModels) return;
+    const weights = SCORING.threatModels[this.threatModel];
+    if (!weights) return;
+    const { advanced, network, basic } = scanData;
+    if (weights.tracking) {
+      const total = (network?.tracking?.length || 0) + (basic?.cookies?.tracking || 0);
+      if (total > 0) scanData._threatPenalty = (scanData._threatPenalty || 0) + Math.round(total * (weights.tracking - 1) * 2);
+    }
+    if (weights.fingerprint) {
+      const fp = (advanced?.fingerprintingAttempts || 0) + (advanced?.fingerprint2?.issues?.length || 0);
+      if (fp > 0) scanData._threatPenalty = (scanData._threatPenalty || 0) + Math.round(fp * (weights.fingerprint - 1) * 3);
+    }
+    if (weights.geolocation) {
+      const geo = (advanced?.deepScanResults?.geolocation?.issues?.length || 0);
+      if (geo > 0) scanData._threatPenalty = (scanData._threatPenalty || 0) + Math.round(geo * (weights.geolocation - 1) * 5);
+    }
+    if (weights.clipboard) {
+      const cb = advanced?.deepScanResults?.clipboard?.hasClipboardListeners ? 1 : 0;
+      if (cb > 0) scanData._threatPenalty = (scanData._threatPenalty || 0) + Math.round(cb * (weights.clipboard - 1) * 5);
+    }
+    if (weights.cookies) {
+      const c = basic?.cookies?.tracking || 0;
+      if (c > 0) scanData._threatPenalty = (scanData._threatPenalty || 0) + Math.round(c * (weights.cookies - 1) * 2);
+    }
+    if (weights.ads) {
+      const ads = (network?.ads?.length || 0) + (advanced?.adNetworks?.length || 0);
+      if (ads > 0) scanData._threatPenalty = (scanData._threatPenalty || 0) + Math.round(ads * (weights.ads - 1) * 2);
+    }
+    if (weights.https) {
+      const insecure = !scanData.url?.startsWith('https://');
+      if (insecure) scanData._threatPenalty = (scanData._threatPenalty || 0) + Math.round(10 * (weights.https - 1));
+    }
+    if (weights.headers) {
+      const sec = basic?.security || {};
+      const missing = (!sec.csp ? 1 : 0) + (!sec.hsts ? 1 : 0);
+      if (missing > 0) scanData._threatPenalty = (scanData._threatPenalty || 0) + Math.round(missing * 3 * (weights.headers - 1));
+    }
+    if (weights.forms) {
+      const insecure = basic?.forms?.insecure || 0;
+      if (insecure > 0) scanData._threatPenalty = (scanData._threatPenalty || 0) + Math.round(insecure * 5 * (weights.forms - 1));
+    }
+    if (weights.cryptoMiners) {
+      const miners = (advanced?.cryptominers?.length || 0) + (advanced?.deepScanResults?.cryptocurrency?.miners?.length || 0);
+      if (miners > 0) scanData._threatPenalty = (scanData._threatPenalty || 0) + Math.round(miners * 10 * (weights.cryptoMiners - 1));
+    }
+  }
+
+  _saveScanResults(domain, scanData) {
+    try {
+      const key = 'scan_' + domain.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const data = {
+        url: scanData.url,
+        score: this.calculateSecurityScore(),
+        timestamp: new Date().toISOString(),
+        categories: scanData.categories || {},
+        trackerCount: (scanData.network?.tracking?.length || 0) + (scanData.basic?.cookies?.tracking || 0),
+        hasCSP: scanData.basic?.security?.csp || false,
+        hasHSTS: scanData.basic?.security?.hsts || false,
+        threatModel: this.threatModel
+      };
+      chrome.storage.local.get({ scanHistory: {} }, (result) => {
+        const history = result.scanHistory;
+        if (!history[key]) history[key] = [];
+        history[key].push(data);
+        if (history[key].length > 10) history[key] = history[key].slice(-10);
+        chrome.storage.local.set({ scanHistory: history });
+      });
+    } catch (e) {}
+  }
+
+  async _loadPreviousScan(domain) {
+    try {
+      const key = 'scan_' + domain.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const result = await chrome.storage.local.get('scanHistory');
+      const history = result.scanHistory || {};
+      const scans = history[key] || [];
+      return scans.length > 0 ? scans[scans.length - 1] : null;
+    } catch (e) { return null; }
+  }
+
+  _renderPrivacyDiff(prev, curr) {
+    const changes = [];
+    if (!prev) return '';
+    if (curr.trackerCount > prev.trackerCount) {
+      changes.push(`<div class="diff-item diff-add">+${curr.trackerCount - prev.trackerCount} new tracking elements since last scan</div>`);
+    } else if (curr.trackerCount < prev.trackerCount) {
+      changes.push(`<div class="diff-item diff-remove">${prev.trackerCount - curr.trackerCount} fewer tracking elements since last scan</div>`);
+    }
+    if (curr.score !== undefined && prev.score !== undefined && curr.score !== prev.score) {
+      const diff = curr.score - prev.score;
+      changes.push(`<div class="diff-item diff-change">Security score ${diff > 0 ? 'improved' : 'dropped'} by ${Math.abs(diff)} points</div>`);
+    }
+    if (curr.hasCSP !== prev.hasCSP) {
+      changes.push(`<div class="diff-item ${curr.hasCSP ? 'diff-add' : 'diff-remove'}">CSP header ${curr.hasCSP ? 'added' : 'removed'}</div>`);
+    }
+    if (curr.hasHSTS !== prev.hasHSTS) {
+      changes.push(`<div class="diff-item ${curr.hasHSTS ? 'diff-add' : 'diff-remove'}">HSTS header ${curr.hasHSTS ? 'added' : 'removed'}</div>`);
+    }
+    if (changes.length === 0) return '';
+    const ago = this._timeAgo(new Date(prev.timestamp));
+    return `<div class="diff-box"><div class="diff-title">Privacy Diff (vs ${ago})</div>${changes.join('')}</div>`;
+  }
+
+  _timeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return minutes + 'm ago';
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return hours + 'h ago';
+    return Math.floor(hours / 24) + 'd ago';
+  }
+
+  _generateNetworkStory(timeline) {
+    if (!timeline || timeline.length === 0) return '<div class="alert alert-info">No network activity recorded for this scan.</div>';
+    const sorted = [...timeline].sort((a, b) => a.startTime - b.startTime);
+    const entries = [];
+    const categoryNames = { tracking: 'tracker', advertising: 'ad network', social: 'social media', analytics: 'analytics', essential: 'essential resource', unknown: 'resource' };
+    sorted.slice(0, 20).forEach((r, i) => {
+      const hostname = (() => { try { return new URL(r.name).hostname; } catch(e) { return ''; } })();
+      const cat = categoryNames[r.category] || 'resource';
+      let timeRef;
+      if (i === 0) timeRef = 'When the page opened';
+      else if (r.startTime < 100) timeRef = 'Within ' + Math.round(r.startTime) + 'ms';
+      else if (r.startTime < 1000) timeRef = Math.round(r.startTime) + 'ms later';
+      else timeRef = (r.startTime / 1000).toFixed(1) + 's later';
+      const actions = {
+        tracking: 'knew you were viewing this page',
+        advertising: 'started loading ads',
+        social: 'tracked your visit',
+        analytics: 'recorded your visit',
+        essential: 'loaded'
+      };
+      const action = actions[r.category] || 'loaded';
+      entries.push(`${timeRef}, <strong>${this._esc(hostname)}</strong> (${cat}) ${action}.`);
+    });
+    const remaining = sorted.length - 20;
+    if (remaining > 0) entries.push(`Plus ${remaining} more network requests.`);
+    return `<div class="alert alert-info" style="line-height:1.8"><strong>&#128214; Network Story</strong>${entries.map(e => `<div style="margin:4px 0">&bull; ${e}</div>`).join('')}</div>`;
+  }
+
+  _generateEvidencePack() {
+    const net = this.scanData?.network;
+    const report = {
+      version: '1.0',
+      generatedAt: new Date().toISOString(),
+      sessionId: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+      url: this.scanData?.url || 'unknown',
+      domain: this._extractDomain(this.scanData?.url || ''),
+      threatModel: this.threatModel || 'none',
+      securityScore: this.calculateSecurityScore(),
+      grade: this.getScoreGrade(this.calculateSecurityScore()).letter,
+      scanResults: {
+        basic: this.scanData?.basic || null,
+        advanced: this.scanData?.advanced ? {
+          trackingPixels: this.scanData.advanced.trackingPixels,
+          fingerprintingAttempts: this.scanData.advanced.fingerprintingAttempts,
+          cryptominers: this.scanData.advanced.cryptominers,
+          adNetworks: this.scanData.advanced.adNetworks,
+          storage: this.scanData.advanced.storage,
+          vulnerabilities: this.scanData.advanced.vulnerabilities
+        } : null,
+        network: net ? {
+          total: net.total,
+          uniqueDomains: net.domains ? [...new Set(net.domains)].length : 0,
+          topDomains: net.domains ? [...new Set(net.domains)].slice(0, 30) : [],
+          tracking: net.tracking ? net.tracking.map(r => ({ domain: r.domain, url: r.url?.substring(0, 120) })) : [],
+          ads: net.ads ? net.ads.map(r => ({ domain: r.domain, url: r.url?.substring(0, 120) })) : [],
+          social: net.social ? net.social.map(r => ({ domain: r.domain, url: r.url?.substring(0, 120) })) : [],
+          timeline: net.timeline ? net.timeline.slice(0, 30) : []
+        } : null,
+        categories: this.scanData?.categories || {},
+        permissions: this.scanData?.permissions || {}
+      },
+      recommendations: this.scanData?.ai?.recommendations || [],
+      threats: this.scanData?.ai?.threats || []
+    };
+    return report;
+  }
+
+  async _exportEvidencePack() {
+    try {
+      const pack = this._generateEvidencePack();
+      const packStr = JSON.stringify(pack, null, 2);
+      const encoder = new TextEncoder();
+      const data = encoder.encode(packStr);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      pack.reportHash = hashHex;
+      const blob = new Blob([JSON.stringify(pack, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `evidence-pack-${this._extractDomain(pack.url)}-${pack.sessionId}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Export failed:', e);
+    }
+  }
+}

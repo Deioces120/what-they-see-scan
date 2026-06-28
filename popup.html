@@ -188,6 +188,25 @@
 
     .hidden { display: none !important; }
 
+    .threat-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:none;align-items:center;justify-content:center; }
+    .threat-overlay.active { display:flex; }
+    .threat-dialog { background:#1a1a2e;border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:24px;max-width:380px;width:90%;text-align:center; }
+    .threat-dialog h3 { color:#fff;font-size:18px;margin-bottom:6px; }
+    .threat-dialog p { color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:16px; }
+    .threat-options { display:flex;flex-direction:column;gap:8px; }
+    .threat-option { background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:14px;cursor:pointer;text-align:left;color:#fff;transition:all 0.2s; }
+    .threat-option:hover { border-color:#4ecdc4;background:rgba(78,205,196,0.1); }
+    .threat-option strong { display:block;margin-bottom:2px; }
+    .threat-option span { font-size:11px;color:rgba(255,255,255,0.5); }
+    .threat-skip { background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;margin-top:12px;font-size:12px; }
+
+    .diff-box { background:rgba(0,0,0,0.3);border:1px solid rgba(78,205,196,0.2);border-radius:8px;padding:12px;margin-top:12px; }
+    .diff-title { font-size:14px;font-weight:600;color:#4ecdc4;margin-bottom:8px; }
+    .diff-item { padding:3px 0;font-size:12px; }
+    .diff-add { color:#4ecdc4; }
+    .diff-remove { color:#ff8a8a; }
+    .diff-change { color:#f7b733; }
+
     .tracker-notification {
       background: rgba(247,183,51,0.1);
       border: 1px solid rgba(247,183,51,0.3); border-radius: 10px;
@@ -220,7 +239,7 @@
 <body>
   <div class="header">
     <h1>What They See</h1>
-    <p>Privacy & Security Scanner</p>
+    <p>Privacy & Security Scanner <a href="#" id="openSidePanel" style="color:#4ecdc4;font-size:12px;margin-left:8px;text-decoration:none">&#128194; Open Side Panel</a></p>
   </div>
 
   <div id="url-bar" class="url-bar">
@@ -237,7 +256,7 @@
 
     <div id="loading" class="loading">
       <div class="spinner"></div>
-      <p class="loading-text">Analyzing website...</p>
+      <p class="loading-text" id="loading-text">Analyzing website...</p>
     </div>
 
     <div id="tabs" class="tabs hidden">
@@ -278,6 +297,22 @@
     </div>
   </div>
 
+  <div id="threat-overlay" class="threat-overlay">
+    <div class="threat-dialog">
+      <h3>What concerns you most?</h3>
+      <p>Personalize your privacy score based on your threat model.</p>
+      <div class="threat-options">
+        <button class="threat-option" data-model="advertising"><span style="font-size:20px;margin-right:8px">&#128226;</span><strong>Advertising</strong><span>Tracking, ads, cookies, behavioral profiling</span></button>
+        <button class="threat-option" data-model="surveillance"><span style="font-size:20px;margin-right:8px">&#128065;</span><strong>Surveillance</strong><span>Fingerprinting, geolocation, clipboard, media access</span></button>
+        <button class="threat-option" data-model="financial"><span style="font-size:20px;margin-right:8px">&#128274;</span><strong>Financial Security</strong><span>HTTPS, security headers, payment forms, crypto mining</span></button>
+      </div>
+      <button class="threat-skip" id="threat-skip">Skip for now</button>
+    </div>
+  </div>
+
+  <script src="domains.js"></script>
+  <script src="scoring-weights.js"></script>
   <script src="popup.js"></script>
+  <script>document.addEventListener('DOMContentLoaded', () => { new PrivacyScanner(); });</script>
 </body>
 </html>

@@ -7,9 +7,8 @@
     "scripting",
     "activeTab",
     "storage",
-    "cookies",
     "webRequest",
-    "notifications"
+    "sidePanel"
   ],
   "host_permissions": ["<all_urls>"],
   "icons": {
@@ -28,9 +27,21 @@
   "background": {
     "service_worker": "background.js"
   },
+  "side_panel": {
+    "default_path": "side-panel.html"
+  },
   "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["domains.js"],
+    "run_at": "document_start"
+  }, {
     "matches": ["<all_urls>"],
     "js": ["content.js"],
     "run_at": "document_idle"
+  }, {
+    "matches": ["<all_urls>"],
+    "js": ["fingerprint-monitor.js"],
+    "run_at": "document_start",
+    "world": "MAIN"
   }]
 }

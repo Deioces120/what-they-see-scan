@@ -60,118 +60,136 @@ class ComprehensiveWebsiteAnalyzer {
 
   runDeepScan() {
     this.deepScanResults = {};
-    this.deepScanResults.csp = this.deepAnalyzeCSP();
-    this.deepScanResults.mixedContent = this.deepDetectMixedContent();
-    this.deepScanResults.sri = this.deepAnalyzeSRI();
-    this.deepScanResults.cors = this.deepAnalyzeCORS();
-    this.deepScanResults.xss = this.deepDetectXSSPatterns();
-    this.deepScanResults.clickjacking = this.deepAnalyzeClickjacking();
-    this.deepScanResults.cookieSecurity = this.deepAnalyzeCookieSecurity();
-    this.deepScanResults.localStorage = this.deepAnalyzeLocalStorage();
-    this.deepScanResults.sessionStorage = this.deepAnalyzeSessionStorage();
-    this.deepScanResults.indexedDB = this.deepAnalyzeIndexedDB();
-    this.deepScanResults.permissions = this.deepDetectPermissions();
-    this.deepScanResults.webrtc = this.deepAnalyzeWebRTC();
-    this.deepScanResults.serviceWorker = this.deepAnalyzeServiceWorker();
-    this.deepScanResults.cacheControl = this.deepAnalyzeCacheControl();
-    this.deepScanResults.domVulnerabilities = this.deepAnalyzeDOMVulnerabilities();
-    this.deepScanResults.resourceLoading = this.deepAnalyzeResourceLoading();
-    this.deepScanResults.errorHandling = this.deepAnalyzeErrorHandling();
-    this.deepScanResults.browserAPIs = this.deepDetectBrowserAPIAbuse();
-    this.deepScanResults.cryptocurrency = this.deepDetectCryptocurrencyMining();
-    this.deepScanResults.clipboard = this.deepDetectClipboardMonitoring();
-    this.deepScanResults.geolocation = this.deepDetectGeolocationTracking();
-    this.deepScanResults.mediaAccess = this.deepDetectMediaAccess();
-    this.deepScanResults.notifications = this.deepDetectNotificationAbuse();
-    this.deepScanResults.paymentAPIs = this.deepDetectPaymentAPIs();
-    this.deepScanResults.credentialAPIs = this.deepDetectCredentialAPIs();
-    this.deepScanResults.bluetoothUSB = this.deepDetectBluetoothUSB();
-    this.deepScanResults.shadowDOM = this.deepDetectShadowDOM();
-    this.deepScanResults.webWorkers = this.deepDetectWebWorkers();
-    this.deepScanResults.webAssembly = this.deepDetectWebAssembly();
-    this.deepScanResults.dnsPrefetch = this.deepDetectDNSPrefetch();
-    this.deepScanResults.preconnect = this.deepDetectPreconnect();
-    this.deepScanResults.linkPrefetch = this.deepDetectLinkPrefetch();
-    this.deepScanResults.httpRedirects = this.deepAnalyzeHTTPRedirects();
-    this.deepScanResults.contentTypes = this.deepAnalyzeContentTypes();
-    this.deepScanResults.inputValidation = this.deepAnalyzeInputValidation();
-    this.deepScanResults.autocomplete = this.deepAnalyzeAutocomplete();
-    this.deepScanResults.externalFonts = this.deepDetectExternalFonts();
-    this.deepScanResults.externalStyles = this.deepDetectExternalStyles();
-    this.deepScanResults.iframeSandbox = this.deepAnalyzeIframeSandbox();
-    this.deepScanResults.objectEmbed = this.deepDetectObjectEmbed();
-    this.deepScanResults.applets = this.deepDetectApplets();
-    this.deepScanResults.dataExfil = this.deepDetectDataExfiltration();
-    this.deepScanResults.keylogging = this.deepDetectKeylogging();
-    this.deepScanResults.formjacking = this.deepDetectFormjacking();
-    this.deepScanResults.magecart = this.deepDetectMagecart();
-    this.deepScanResults.sessionFixation = this.deepDetectSessionFixation();
-    this.deepScanResults.csrf = this.deepDetectCSRF();
-    this.deepScanResults.openRedirect = this.deepDetectOpenRedirects();
-    this.deepScanResults.pathTraversal = this.deepDetectPathTraversal();
-    this.deepScanResults.sqlInjection = this.deepDetectSQLInjectionPatterns();
-    this.deepScanResults.xxe = this.deepDetectXXE();
-    this.deepScanResults.ssrf = this.deepDetectSSRF();
-    this.deepScanResults.dnsRebinding = this.deepDetectDNSRebinding();
-    this.deepScanResults.subresourceIntegrity = this.deepDetectSRI();
-    this.deepScanResults.mixedProtocol = this.deepDetectMixedProtocol();
-    this.deepScanResults.insecureForm = this.deepDetectInsecureFormActions();
-    this.deepScanResults.autofill = this.deepDetectAutofillAbuse();
-    this.deepScanResults.fingerprint2 = this.deepDetectFingerprintJS();
-    this.deepScanResults.canvas2 = this.deepDetectCanvasFingerprinting();
-    this.deepScanResults.webgl2 = this.deepDetectWebGLFingerprinting();
-    this.deepScanResults.audio2 = this.deepDetectAudioFingerprinting();
-    this.deepScanResults.font2 = this.deepDetectFontFingerprinting();
-    this.deepScanResults.screen2 = this.deepDetectScreenFingerprinting();
-    this.deepScanResults.navigator2 = this.deepDetectNavigatorFingerprinting();
-    this.deepScanResults.battery = this.deepDetectBatteryAPI();
-    this.deepScanResults.connection = this.deepDetectConnectionAPI();
-    this.deepScanResults.speech = this.deepDetectSpeechRecognition();
-    this.deepScanResults.vr = this.deepDetectVRAR();
-    this.deepScanResults.nfc = this.deepDetectNFC();
-    this.deepScanResults.gamepad = this.deepDetectGamepadAPI();
-    this.deepScanResults.serial = this.deepDetectSerialAPI();
-    this.deepScanResults.usb = this.deepDetectUSBDeviceAPI();
-    this.deepScanResults.hid = this.deepDetectHID();
-    this.deepScanResults.wakeLock = this.deepDetectWakeLock();
-    this.deepScanResults.presentation = this.deepDetectPresentationAPI();
-    this.deepScanResults.backgroundSync = this.deepDetectBackgroundSync();
-    this.deepScanResults.pushAPI = this.deepDetectPushAPI();
-    this.deepScanResults.periodicSync = this.deepDetectPeriodicSync();
-    this.deepScanResults.contentIndexing = this.deepDetectContentIndexing();
-    this.deepScanResults.shareAPI = this.deepDetectShareAPI();
-    this.deepScanResults.contacts = this.deepDetectContactsAPI();
-    this.deepScanResults.credentials = this.deepDetectCredentialsAPI();
-    this.deepScanResults.webShare = this.deepDetectWebShare();
-    this.deepScanResults.fileSystem = this.deepDetectFileSystemAPI();
-    this.deepScanResults.storageAPI = this.deepDetectStorageAPI();
-    this.deepScanResults.permissionAPI = this.deepDetectPermissionStatus();
-    this.deepScanResults.clipboardRead = this.deepDetectClipboardRead();
-    this.deepScanResults.clipboardWrite = this.deepDetectClipboardWrite();
-    this.deepScanResults.mediaRecorder = this.deepDetectMediaRecorder();
-    this.deepScanResults.imageCapture = this.deepDetectImageCapture();
-    this.deepScanResults.barcode = this.deepDetectBarcodeDetector();
-    this.deepScanResults.faceDetection = this.deepDetectFaceDetection();
-    this.deepScanResults.textDetection = this.deepDetectTextDetection();
-    this.deepScanResults.styleDetection = this.deepDetectStyleDetection();
-    this.deepScanResults.cookieSync = this.deepDetectCookieSync();
-    this.deepScanResults.evercookies = this.deepDetectEvercookies();
-    this.deepScanResults.cacheTiming = this.deepDetectCacheTiming();
-    this.deepScanResults.historySniffing = this.deepDetectHistorySniffing();
-    this.deepScanResults.plugins = this.deepDetectPluginEnumeration();
-    this.deepScanResults.mimeTypes = this.deepDetectMimeTypeEnumeration();
-    this.deepScanResults.mediaDevices = this.deepDetectMediaDevices();
-    this.deepScanResults.speechSynthesis = this.deepDetectSpeechSynthesis();
-    this.deepScanResults.speechRecog = this.deepDetectSpeechRecognitionAPI();
-    this.deepScanResults.midi = this.deepDetectMIDI();
-    this.deepScanResults.sensor = this.deepDetectSensorAPIs();
-    this.deepScanResults.observers = this.deepDetectMutationObservers();
-    this.deepScanResults.timers = this.deepDetectTimerAbuse();
-    this.deepScanResults.workerSpam = this.deepDetectWorkerSpam();
-    this.deepScanResults.cryptoMining = this.deepDetectCryptoMiningExpanded();
-    this.deepScanResults.adInjection = this.deepDetectAdInjection();
-    this.deepScanResults.affiliate = this.deepDetectAffiliateTracking();
-    this.deepScanResults.fingerprinting3 = this.deepDetectAdvancedFingerprinting();
+    const checks = [
+      ['csp', () => this.deepAnalyzeCSP()],
+      ['mixedContent', () => this.deepDetectMixedContent()],
+      ['sri', () => this.deepAnalyzeSRI()],
+      ['cors', () => this.deepAnalyzeCORS()],
+      ['xss', () => this.deepDetectXSSPatterns()],
+      ['clickjacking', () => this.deepAnalyzeClickjacking()],
+      ['cookieSecurity', () => this.deepAnalyzeCookieSecurity()],
+      ['localStorage', () => this.deepAnalyzeLocalStorage()],
+      ['sessionStorage', () => this.deepAnalyzeSessionStorage()],
+      ['indexedDB', () => this.deepAnalyzeIndexedDB()],
+      ['permissions', () => this.deepDetectPermissions()],
+      ['webrtc', () => this.deepAnalyzeWebRTC()],
+      ['serviceWorker', () => this.deepAnalyzeServiceWorker()],
+      ['cacheControl', () => this.deepAnalyzeCacheControl()],
+      ['domVulnerabilities', () => this.deepAnalyzeDOMVulnerabilities()],
+      ['resourceLoading', () => this.deepAnalyzeResourceLoading()],
+      ['errorHandling', () => this.deepAnalyzeErrorHandling()],
+      ['browserAPIs', () => this.deepDetectBrowserAPIAbuse()],
+      ['cryptocurrency', () => this.deepDetectCryptocurrencyMining()],
+      ['clipboard', () => this.deepDetectClipboardMonitoring()],
+      ['geolocation', () => this.deepDetectGeolocationTracking()],
+      ['mediaAccess', () => this.deepDetectMediaAccess()],
+      ['notifications', () => this.deepDetectNotificationAbuse()],
+      ['paymentAPIs', () => this.deepDetectPaymentAPIs()],
+      ['credentialAPIs', () => this.deepDetectCredentialAPIs()],
+      ['bluetoothUSB', () => this.deepDetectBluetoothUSB()],
+      ['shadowDOM', () => this.deepDetectShadowDOM()],
+      ['webWorkers', () => this.deepDetectWebWorkers()],
+      ['webAssembly', () => this.deepDetectWebAssembly()],
+      ['dnsPrefetch', () => this.deepDetectDNSPrefetch()],
+      ['preconnect', () => this.deepDetectPreconnect()],
+      ['linkPrefetch', () => this.deepDetectLinkPrefetch()],
+      ['httpRedirects', () => this.deepAnalyzeHTTPRedirects()],
+      ['contentTypes', () => this.deepAnalyzeContentTypes()],
+      ['inputValidation', () => this.deepAnalyzeInputValidation()],
+      ['autocomplete', () => this.deepAnalyzeAutocomplete()],
+      ['externalFonts', () => this.deepDetectExternalFonts()],
+      ['externalStyles', () => this.deepDetectExternalStyles()],
+      ['iframeSandbox', () => this.deepAnalyzeIframeSandbox()],
+      ['objectEmbed', () => this.deepDetectObjectEmbed()],
+      ['applets', () => this.deepDetectApplets()],
+      ['dataExfil', () => this.deepDetectDataExfiltration()],
+      ['keylogging', () => this.deepDetectKeylogging()],
+      ['formjacking', () => this.deepDetectFormjacking()],
+      ['magecart', () => this.deepDetectMagecart()],
+      ['sessionFixation', () => this.deepDetectSessionFixation()],
+      ['csrf', () => this.deepDetectCSRF()],
+      ['openRedirect', () => this.deepDetectOpenRedirects()],
+      ['pathTraversal', () => this.deepDetectPathTraversal()],
+      ['sqlInjection', () => this.deepDetectSQLInjectionPatterns()],
+      ['xxe', () => this.deepDetectXXE()],
+      ['ssrf', () => this.deepDetectSSRF()],
+      ['dnsRebinding', () => this.deepDetectDNSRebinding()],
+      ['subresourceIntegrity', () => this.deepDetectSRI()],
+      ['mixedProtocol', () => this.deepDetectMixedProtocol()],
+      ['insecureForm', () => this.deepDetectInsecureFormActions()],
+      ['autofill', () => this.deepDetectAutofillAbuse()],
+      ['fingerprint2', () => this.deepDetectFingerprintJS()],
+      ['canvas2', () => this.deepDetectCanvasFingerprinting()],
+      ['webgl2', () => this.deepDetectWebGLFingerprinting()],
+      ['audio2', () => this.deepDetectAudioFingerprinting()],
+      ['font2', () => this.deepDetectFontFingerprinting()],
+      ['screen2', () => this.deepDetectScreenFingerprinting()],
+      ['navigator2', () => this.deepDetectNavigatorFingerprinting()],
+      ['battery', () => this.deepDetectBatteryAPI()],
+      ['connection', () => this.deepDetectConnectionAPI()],
+      ['speech', () => this.deepDetectSpeechRecognition()],
+      ['vr', () => this.deepDetectVRAR()],
+      ['nfc', () => this.deepDetectNFC()],
+      ['gamepad', () => this.deepDetectGamepadAPI()],
+      ['serial', () => this.deepDetectSerialAPI()],
+      ['usb', () => this.deepDetectUSBDeviceAPI()],
+      ['hid', () => this.deepDetectHID()],
+      ['wakeLock', () => this.deepDetectWakeLock()],
+      ['presentation', () => this.deepDetectPresentationAPI()],
+      ['backgroundSync', () => this.deepDetectBackgroundSync()],
+      ['pushAPI', () => this.deepDetectPushAPI()],
+      ['periodicSync', () => this.deepDetectPeriodicSync()],
+      ['contentIndexing', () => this.deepDetectContentIndexing()],
+      ['shareAPI', () => this.deepDetectShareAPI()],
+      ['contacts', () => this.deepDetectContactsAPI()],
+      ['credentials', () => this.deepDetectCredentialsAPI()],
+      ['webShare', () => this.deepDetectWebShare()],
+      ['fileSystem', () => this.deepDetectFileSystemAPI()],
+      ['storageAPI', () => this.deepDetectStorageAPI()],
+      ['permissionAPI', () => this.deepDetectPermissionStatus()],
+      ['clipboardRead', () => this.deepDetectClipboardRead()],
+      ['clipboardWrite', () => this.deepDetectClipboardWrite()],
+      ['mediaRecorder', () => this.deepDetectMediaRecorder()],
+      ['imageCapture', () => this.deepDetectImageCapture()],
+      ['barcode', () => this.deepDetectBarcodeDetector()],
+      ['faceDetection', () => this.deepDetectFaceDetection()],
+      ['textDetection', () => this.deepDetectTextDetection()],
+      ['styleDetection', () => this.deepDetectStyleDetection()],
+      ['cookieSync', () => this.deepDetectCookieSync()],
+      ['evercookies', () => this.deepDetectEvercookies()],
+      ['cacheTiming', () => this.deepDetectCacheTiming()],
+      ['historySniffing', () => this.deepDetectHistorySniffing()],
+      ['plugins', () => this.deepDetectPluginEnumeration()],
+      ['mimeTypes', () => this.deepDetectMimeTypeEnumeration()],
+      ['mediaDevices', () => this.deepDetectMediaDevices()],
+      ['speechSynthesis', () => this.deepDetectSpeechSynthesis()],
+      ['speechRecog', () => this.deepDetectSpeechRecognitionAPI()],
+      ['midi', () => this.deepDetectMIDI()],
+      ['sensor', () => this.deepDetectSensorAPIs()],
+      ['observers', () => this.deepDetectMutationObservers()],
+      ['timers', () => this.deepDetectTimerAbuse()],
+      ['workerSpam', () => this.deepDetectWorkerSpam()],
+      ['cryptoMining', () => this.deepDetectCryptoMiningExpanded()],
+      ['adInjection', () => this.deepDetectAdInjection()],
+      ['affiliate', () => this.deepDetectAffiliateTracking()],
+      ['fingerprinting3', () => this.deepDetectAdvancedFingerprinting()]
+    ];
+    const CHUNK_SIZE = 15;
+    const processChunk = (startIdx) => {
+      if (startIdx >= checks.length) return;
+      const endIdx = Math.min(startIdx + CHUNK_SIZE, checks.length);
+      for (let i = startIdx; i < endIdx; i++) {
+        try { this.deepScanResults[checks[i][0]] = checks[i][1](); } catch (e) {}
+      }
+      if (endIdx < checks.length) {
+        if (typeof requestIdleCallback !== 'undefined') {
+          requestIdleCallback(() => processChunk(endIdx), { timeout: 50 });
+        } else {
+          setTimeout(() => processChunk(endIdx), 0);
+        }
+      }
+    };
+    processChunk(0);
   }
 
   setupPerformanceMonitoring() {
@@ -273,23 +291,28 @@ class ComprehensiveWebsiteAnalyzer {
 
   detectSocialWidgets() {
     try {
-      const socialPatterns = {
-        facebook: ['facebook.com', 'fb.com', 'fbcdn.net'],
-        twitter: ['twitter.com', 't.co', 'twimg.com'],
-        instagram: ['instagram.com', 'cdninstagram.com'],
-        linkedin: ['linkedin.com', 'licdn.com'],
-        youtube: ['youtube.com', 'youtu.be', 'ytimg.com'],
-        tiktok: ['tiktok.com', 'tiktokcdn.com'],
-        pinterest: ['pinterest.com', 'pinimg.com']
-      };
+      const domains = self.__privacyDomains || {};
+      const socialDomains = domains.socialDomains || [];
+      const socialWidgetSelectors = domains.socialWidgetSelectors || [];
+
+      const platformMap = {};
+      socialDomains.forEach(d => {
+        if (d.includes('facebook') || d.includes('fb.') || d.includes('fbcdn')) platformMap[d] = 'facebook';
+        else if (d.includes('twitter') || d === 't.co' || d.includes('twimg')) platformMap[d] = 'twitter';
+        else if (d.includes('instagram') || d.includes('cdninstagram')) platformMap[d] = 'instagram';
+        else if (d.includes('linkedin') || d.includes('licdn')) platformMap[d] = 'linkedin';
+        else if (d.includes('youtube') || d.includes('youtu.be') || d.includes('ytimg')) platformMap[d] = 'youtube';
+        else if (d.includes('tiktok')) platformMap[d] = 'tiktok';
+        else if (d.includes('pinterest') || d.includes('pinimg')) platformMap[d] = 'pinterest';
+      });
 
       const iframes = document.querySelectorAll('iframe[src]');
       iframes.forEach(iframe => {
         const src = iframe.src.toLowerCase();
-        Object.entries(socialPatterns).forEach(([platform, domains]) => {
-          if (domains.some(domain => src.includes(domain))) {
+        socialDomains.forEach(domain => {
+          if (src.includes(domain)) {
             this.socialMediaWidgets.push({
-              platform, type: 'iframe', src: this._sanitizeUrl(iframe.src)
+              platform: platformMap[domain] || 'unknown', type: 'iframe', src: this._sanitizeUrl(iframe.src)
             });
           }
         });
@@ -298,20 +321,16 @@ class ComprehensiveWebsiteAnalyzer {
       const scripts = document.querySelectorAll('script[src]');
       scripts.forEach(script => {
         const src = script.src.toLowerCase();
-        Object.entries(socialPatterns).forEach(([platform, domains]) => {
-          if (domains.some(domain => src.includes(domain))) {
+        socialDomains.forEach(domain => {
+          if (src.includes(domain)) {
             this.socialMediaWidgets.push({
-              platform, type: 'script', src: this._sanitizeUrl(script.src)
+              platform: platformMap[domain] || 'unknown', type: 'script', src: this._sanitizeUrl(script.src)
             });
           }
         });
       });
 
-      const socialSelectors = [
-        '.fb-like', '.fb-share-button', '.twitter-share-button',
-        '.linkedin-share-button', '.pinterest-share-button'
-      ];
-      socialSelectors.forEach(selector => {
+      socialWidgetSelectors.forEach(selector => {
         try {
           const elements = document.querySelectorAll(selector);
           elements.forEach(el => {
@@ -335,85 +354,16 @@ class ComprehensiveWebsiteAnalyzer {
   }
 
   monitorFingerprintingAttempts() {
-    this._monitorCanvasFingerprinting();
-    this._monitorWebGLFingerprinting();
-    this._monitorAudioFingerprinting();
+    this._setupMainWorldFingerprintListener();
     this._monitorFontDetection();
   }
 
-  _monitorCanvasFingerprinting() {
-    try {
-      const origToDataURL = HTMLCanvasElement.prototype.toDataURL;
-      HTMLCanvasElement.prototype.toDataURL = function(...args) {
-        const ref = window.__privacyScanner;
-        if (ref && !ref._isSelfCreated) {
-          ref.fingerprintingAttempts.push({
-            type: 'canvas_toDataURL',
-            timestamp: Date.now()
-          });
-        }
-        return origToDataURL.apply(this, args);
-      };
-
-      const origGetImageData = CanvasRenderingContext2D.prototype.getImageData;
-      CanvasRenderingContext2D.prototype.getImageData = function(...args) {
-        const ref = window.__privacyScanner;
-        if (ref && !ref._isSelfCreated) {
-          ref.fingerprintingAttempts.push({
-            type: 'canvas_getImageData',
-            timestamp: Date.now()
-          });
-        }
-        return origGetImageData.apply(this, args);
-      };
-    } catch (error) {}
-  }
-
-  _monitorWebGLFingerprinting() {
-    try {
-      const contexts = ['webgl', 'experimental-webgl', 'webgl2'];
-      contexts.forEach(contextType => {
-        const origGetContext = HTMLCanvasElement.prototype.getContext;
-        HTMLCanvasElement.prototype.getContext = function(type, ...args) {
-          if (type === contextType) {
-            const ref = window.__privacyScanner;
-            if (ref && !ref._isSelfCreated) {
-              ref.fingerprintingAttempts.push({
-                type: 'webgl_context_creation',
-                contextType: type,
-                timestamp: Date.now()
-              });
-            }
-          }
-          return origGetContext.apply(this, [type, ...args]);
-        };
-      });
-    } catch (error) {}
-  }
-
-  _monitorAudioFingerprinting() {
-    try {
-      if (window.AudioContext || window.webkitAudioContext) {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        const origOsc = AudioCtx.prototype.createOscillator;
-        const origAnalyser = AudioCtx.prototype.createAnalyser;
-
-        AudioCtx.prototype.createOscillator = function(...args) {
-          const ref = window.__privacyScanner;
-          if (ref && !ref._isSelfCreated) {
-            ref.fingerprintingAttempts.push({ type: 'audio_oscillator', timestamp: Date.now() });
-          }
-          return origOsc.apply(this, args);
-        };
-        AudioCtx.prototype.createAnalyser = function(...args) {
-          const ref = window.__privacyScanner;
-          if (ref && !ref._isSelfCreated) {
-            ref.fingerprintingAttempts.push({ type: 'audio_analyser', timestamp: Date.now() });
-          }
-          return origAnalyser.apply(this, args);
-        };
+  _setupMainWorldFingerprintListener() {
+    document.addEventListener('__privacyScannerFingerprint', (e) => {
+      if (e.detail) {
+        this.fingerprintingAttempts.push(e.detail);
       }
-    } catch (error) {}
+    });
   }
 
   _monitorFontDetection() {
@@ -463,25 +413,15 @@ class ComprehensiveWebsiteAnalyzer {
   }
 
   _findTrackingKeys(storageData) {
-    const patterns = ['_ga', '_gid', '_gat', '_fbp', '_fbc', '_hjid', '__utma', 'utm_', '_clck', '_pk_'];
+    const patterns = self.__privacyDomains?.trackingCookiePatterns || [];
     return Object.keys(storageData).filter(key =>
-      patterns.some(p => key.toLowerCase().includes(p))
+      patterns.some(p => key.toLowerCase().includes(p.toLowerCase()))
     );
   }
 
   detectAdNetworks() {
     try {
-      const adNetworks = [
-        'googlesyndication.com', 'doubleclick.net', 'googleadservices.com',
-        'amazon-adsystem.com', 'outbrain.com', 'taboola.com',
-        'criteo.com', 'media.net', 'pubmatic.com', 'rubiconproject.com',
-        'openx.net', 'adnxs.com', 'casalemedia.com', 'indexexchange.com',
-        'sharethrough.com', 'teads.tv', 'spotxchange.com', 'moat.com',
-        'adsrvr.org', 'demdex.net', 'everesttech.net', 'bluekai.com',
-        'lotame.com', 'krxd.net', 'bombora.com', 'zoominfo.com',
-        'quantserve.com', 'scorecardresearch.com', 'chartbeat.com',
-        'optimizely.com', 'branch.io', 'adjust.com', 'appsflyer.com'
-      ];
+      const adNetworks = self.__privacyDomains?.adNetworks || [];
       this.detectedAdNetworks = [];
       const scripts = document.querySelectorAll('script[src]');
       scripts.forEach(script => {
@@ -535,12 +475,7 @@ class ComprehensiveWebsiteAnalyzer {
 
   detectCryptominers() {
     try {
-      const minerPatterns = [
-        'coinhive', 'jsecoin', 'coinerra', 'minergate', 'crypto-loot',
-        'webminerpool', 'coin-have', 'minero', 'cryptonight', 'cryptonoter',
-        'authedmine', 'coinimp', 'ppoi.org', 'jsecoin.com', 'monerominer.rocks',
-        'webminepool.com', 'miner.pr0gramm.com', 'minr.pw', 'webmr.cryptaloot.pro'
-      ];
+      const minerPatterns = self.__privacyDomains?.cryptominingPatterns || [];
       this.cryptominers = [];
       document.querySelectorAll('script').forEach(script => {
         const content = (script.textContent || script.src || '').toLowerCase();
@@ -596,23 +531,16 @@ class ComprehensiveWebsiteAnalyzer {
         const name = nameValue.trim();
         this.cookieDetails.push({
           name,
-          hasTrackingPattern: this._isTrackingCookie(name),
-          sameSite: this._getCookieAttr(cookie, 'SameSite'),
-          secure: cookie.includes('Secure'),
-          httpOnly: cookie.includes('HttpOnly')
+          hasTrackingPattern: this._isTrackingCookie(name)
         });
       });
     } catch (error) {}
   }
 
   _isTrackingCookie(name) {
-    const patterns = ['_ga', '_gid', '_gat', '_fbp', '_fbc', '_hjid', '__utma', 'utm_', '_clck', '_pk_'];
+    const d = window.__privacyDomains || {};
+    const patterns = d.trackingCookiePatterns || ['_ga', '_gid', '_gat', '_fbp', '_fbc', '_hjid', '__utma', 'utm_', '_clck', '_pk_'];
     return patterns.some(p => name.toLowerCase().includes(p));
-  }
-
-  _getCookieAttr(cookieStr, attr) {
-    const match = cookieStr.match(new RegExp(`${attr}=([^;]+)`));
-    return match ? match[1] : null;
   }
 
   analyzeForms() {
@@ -695,28 +623,12 @@ class ComprehensiveWebsiteAnalyzer {
 
   categorizeTrackers() {
     const categories = { analytics: [], advertising: [], social: [], essential: [], cdn: [], unknown: [] };
-    const analyticsDomains = [
-      'google-analytics.com', 'googletagmanager.com', 'hotjar.com', 'mixpanel.com',
-      'segment.com', 'amplitude.com', 'crazyegg.com', 'fullstory.com',
-      'optimizely.com', 'heap.io', 'pendo.io', 'kissmetrics.com'
-    ];
-    const adDomains = [
-      'googlesyndication.com', 'doubleclick.net', 'googleadservices.com',
-      'amazon-adsystem.com', 'outbrain.com', 'taboola.com', 'criteo.com', 'media.net',
-      'pubmatic.com', 'rubiconproject.com', 'openx.net', 'adnxs.com'
-    ];
-    const socialDomains = [
-      'facebook.com', 'facebook.net', 'fbcdn.net', 'twitter.com', 't.co',
-      'instagram.com', 'linkedin.com', 'pinterest.com', 'tiktok.com', 'youtube.com'
-    ];
-    const essentialDomains = [
-      'cloudflare.com', 'amazonaws.com', 'cloudfront.net', 'jsdelivr.net',
-      'unpkg.com', 'cdnjs.cloudflare.com', 'googleapis.com', 'gstatic.com'
-    ];
-    const cdnDomains = [
-      'akamai.net', 'akamaized.net', 'fastly.net', 'azureedge.net',
-      'edgecastcdn.net', 'maxcdn.com', 'bootstrapcdn.com'
-    ];
+    const domains = self.__privacyDomains || {};
+    const analyticsDomains = domains.analyticsDomains || [];
+    const adDomains = domains.adNetworks || [];
+    const socialDomains = domains.socialDomains || [];
+    const essentialDomains = domains.essentialDomains || [];
+    const cdnDomains = domains.cdnDomains || [];
 
     const allTrackers = new Set();
     if (this.detectedAdNetworks) this.detectedAdNetworks.forEach(d => allTrackers.add(d));
@@ -907,20 +819,32 @@ class ComprehensiveWebsiteAnalyzer {
   deepDetectXSSPatterns() {
     const result = { issues: [], patterns: [] };
     try {
+      const xssRegexes = [
+        { re: /document\.write\s*\(/g, name: 'document.write' },
+        { re: /\.innerHTML\s*=/g, name: 'innerHTML' },
+        { re: /\.outerHTML\s*=/g, name: 'outerHTML' },
+        { re: /\beval\s*\(/g, name: 'eval' },
+        { re: /\bFunction\s*\(/g, name: 'Function constructor' },
+        { re: /setTimeout\s*\(\s*['"]/g, name: 'string_timeout' },
+        { re: /setInterval\s*\(\s*['"]/g, name: 'string_interval' },
+        { re: /\.insertAdjacentHTML/g, name: 'insertAdjacentHTML' },
+        { re: /document\.location\s*=/g, name: 'location_assign' },
+        { re: /window\.location\s*=/g, name: 'window_location_assign' },
+        { re: /document\.domain/g, name: 'document.domain' },
+        { re: /postMessage.*origin/g, name: 'postMessage' }
+      ];
       const scripts = document.querySelectorAll('script:not([src])');
       scripts.forEach(script => {
         const content = script.textContent || '';
-        if (content.includes('document.write(')) result.patterns.push('document.write');
-        if (content.includes('innerHTML')) result.patterns.push('innerHTML');
-        if (content.includes('outerHTML')) result.patterns.push('outerHTML');
-        if (content.includes('eval(')) result.patterns.push('eval');
-        if (content.includes('Function(')) result.patterns.push('Function constructor');
-        if (content.includes('setTimeout("') || content.includes('setInterval("')) result.patterns.push('string_timeout');
-        if (content.includes('.insertAdjacentHTML')) result.patterns.push('insertAdjacentHTML');
-        if (content.includes('document.location') && content.includes('=')) result.patterns.push('location_assign');
-        if (content.includes('window.location') && content.includes('=')) result.patterns.push('window_location_assign');
-        if (content.includes('document.domain')) result.patterns.push('document.domain');
-        if (content.includes('postMessage') && content.includes('origin')) result.patterns.push('postMessage');
+        if (content.length > 50000) return;
+        const seen = new Set();
+        xssRegexes.forEach(({ re, name }) => {
+          re.lastIndex = 0;
+          if (re.test(content) && !seen.has(name)) {
+            result.patterns.push(name);
+            seen.add(name);
+          }
+        });
       });
       document.querySelectorAll('[onclick], [onerror], [onload], [onmouseover]').forEach(el => {
         result.patterns.push('inline_event_handler:' + el.tagName.toLowerCase());
@@ -948,31 +872,22 @@ class ComprehensiveWebsiteAnalyzer {
   }
 
   deepAnalyzeCookieSecurity() {
-    const result = { cookies: [], issues: [], totalCookies: 0, trackingCookies: 0, insecureCookies: 0 };
+    const result = { cookies: [], issues: [], totalCookies: 0, trackingCookies: 0 };
     try {
       const cookies = document.cookie.split(';').filter(c => c.trim());
       result.totalCookies = cookies.length;
-      const trackingPatterns = ['_ga', '_gid', '_gat', '_fbp', '_fbc', '_hjid', '__utma', 'utm_', '_clck', '_pk_', '_fbp_', 'fr', 'IDE', 'NID', '1p_jar', 'CONSENT', 'GPS', 'VISITOR_INFO1', 'YSC', 'S', 'SID', 'HSID', 'SSID', 'APISID', 'SAPISID'];
+      const trackingPatterns = (window.__privacyDomains && window.__privacyDomains.trackingCookiePatterns) || ['_ga', '_gid', '_gat', '_fbp', '_fbc', '_hjid', '__utma', 'utm_', '_clck', '_pk_', '_fbp_', 'fr', 'IDE', 'NID', '1p_jar', 'CONSENT', 'GPS', 'VISITOR_INFO1', 'YSC', 'S', 'SID', 'HSID', 'SSID', 'APISID', 'SAPISID'];
       cookies.forEach(cookie => {
         const [nameValue] = cookie.split('=');
         const name = nameValue.trim();
         const isTracking = trackingPatterns.some(p => name.toLowerCase().includes(p.toLowerCase()));
         if (isTracking) result.trackingCookies++;
-        const isSecure = cookie.includes('Secure');
-        const hasSameSite = cookie.toLowerCase().includes('samesite');
-        const hasHttpOnly = cookie.toLowerCase().includes('httponly');
-        if (!isSecure) result.insecureCookies++;
-        result.cookies.push({ name, isTracking, isSecure, hasSameSite, hasHttpOnly });
-        if (!isSecure && isTracking) {
-          result.issues.push({ type: 'insecure_tracking_cookie', cookie: name });
+        result.cookies.push({ name, isTracking });
+        if (!isTracking) {
+          return;
         }
-        if (!hasSameSite) {
-          result.issues.push({ type: 'missing_samesite', cookie: name });
-        }
+        result.issues.push({ type: 'tracking_cookie', cookie: name });
       });
-      if (result.insecureCookies > 3) {
-        result.issues.push({ type: 'excessive_insecure_cookies', count: result.insecureCookies });
-      }
     } catch (e) {}
     return result;
   }
@@ -1083,15 +998,25 @@ class ComprehensiveWebsiteAnalyzer {
   deepAnalyzeDOMVulnerabilities() {
     const result = { issues: [], patterns: [] };
     try {
+      const domRegexes = [
+        { re: /document\.write/g, name: 'document.write' },
+        { re: /\.innerHTML.*user|user.*\.innerHTML/g, name: 'user_input_to_innerHTML' },
+        { re: /location\.hash.*innerHTML|innerHTML.*location\.hash/g, name: 'hash_to_innerHTML' },
+        { re: /location\.search.*innerHTML|innerHTML.*location\.search/g, name: 'search_to_innerHTML' },
+        { re: /document\.referrer.*innerHTML|innerHTML.*document\.referrer/g, name: 'referrer_to_innerHTML' },
+        { re: /window\.name.*innerHTML|innerHTML.*window\.name/g, name: 'window_name_to_innerHTML' }
+      ];
       const scripts = document.querySelectorAll('script:not([src])');
       scripts.forEach(script => {
         const content = script.textContent || '';
-        if (content.includes('document.write')) result.patterns.push('document.write');
-        if (content.includes('.innerHTML') && content.includes('user')) result.patterns.push('user_input_to_innerHTML');
-        if (content.includes('location.hash') && content.includes('innerHTML')) result.patterns.push('hash_to_innerHTML');
-        if (content.includes('location.search') && content.includes('innerHTML')) result.patterns.push('search_to_innerHTML');
-        if (content.includes('document.referrer') && content.includes('innerHTML')) result.patterns.push('referrer_to_innerHTML');
-        if (content.includes('window.name') && content.includes('innerHTML')) result.patterns.push('window_name_to_innerHTML');
+        const seen = new Set();
+        domRegexes.forEach(({ re, name }) => {
+          re.lastIndex = 0;
+          if (re.test(content) && !seen.has(name)) {
+            result.patterns.push(name);
+            seen.add(name);
+          }
+        });
       });
       document.querySelectorAll('a[href^="javascript:"]').forEach(a => {
         result.patterns.push('javascript_protocol_link');
@@ -1165,7 +1090,8 @@ class ComprehensiveWebsiteAnalyzer {
   deepDetectCryptocurrencyMining() {
     const result = { miners: [], issues: [] };
     try {
-      const patterns = ['coinhive', 'cryptoloot', 'coin-imp', 'coinhave', 'coinerr', 'minero', 'webminepool', 'coinhive.com', 'authedmine.com', 'jsecoin', 'cryptonight'];
+      const d = window.__privacyDomains || {};
+      const patterns = d.cryptominingPatterns || ['coinhive', 'cryptoloot', 'coin-imp', 'coinhave', 'coinerr', 'minero', 'webminepool', 'coinhive.com', 'authedmine.com', 'jsecoin', 'cryptonight'];
       const scripts = document.querySelectorAll('script');
       scripts.forEach(script => {
         const content = (script.textContent || '').toLowerCase();
@@ -1472,14 +1398,24 @@ class ComprehensiveWebsiteAnalyzer {
   deepDetectDataExfiltration() {
     const result = { issues: [], patterns: [] };
     try {
+      const exfilRegexes = [
+        { re: /navigator\.sendBeacon/g, name: 'sendBeacon' },
+        { re: /new\s+Image\(\).*\.src\s*=/g, name: 'pixel_tracking' },
+        { re: /XMLHttpRequest.*open\s*\(\s*['"]POST['"]/g, name: 'xhr_post' },
+        { re: /fetch\s*\(.*method\s*:\s*['"]POST['"]/g, name: 'fetch_post' },
+        { re: /navigator\.sendBeacon.*data\s*:/g, name: 'beacon_with_data' }
+      ];
       const scripts = document.querySelectorAll('script:not([src])');
       scripts.forEach(script => {
         const content = script.textContent || '';
-        if (content.includes('navigator.sendBeacon')) result.patterns.push('sendBeacon');
-        if (content.includes('new Image()') && content.includes('.src=')) result.patterns.push('pixel_tracking');
-        if (content.includes('XMLHttpRequest') && content.includes('open("POST"')) result.patterns.push('xhr_post');
-        if (content.includes('fetch(') && content.includes('method:"POST"')) result.patterns.push('fetch_post');
-        if (content.includes('navigator.sendBeacon') && content.includes('data:')) result.patterns.push('beacon_with_data');
+        const seen = new Set();
+        exfilRegexes.forEach(({ re, name }) => {
+          re.lastIndex = 0;
+          if (re.test(content) && !seen.has(name)) {
+            result.patterns.push(name);
+            seen.add(name);
+          }
+        });
       });
       if (result.patterns.length > 0) {
         result.issues.push({ type: 'data_exfil_patterns', patterns: result.patterns.slice(0, 20) });
@@ -1491,13 +1427,23 @@ class ComprehensiveWebsiteAnalyzer {
   deepDetectKeylogging() {
     const result = { issues: [], patterns: [] };
     try {
+      const keyRegexes = [
+        { re: /addEventListener\s*\(\s*['"]keydown['"]/g, name: 'keydown_listener' },
+        { re: /addEventListener\s*\(\s*['"]keypress['"]/g, name: 'keypress_listener' },
+        { re: /addEventListener\s*\(\s*['"]keyup['"]/g, name: 'keyup_listener' },
+        { re: /onkeydown|onkeypress|onkeyup/g, name: 'inline_key_handler' }
+      ];
       const scripts = document.querySelectorAll('script:not([src])');
       scripts.forEach(script => {
         const content = script.textContent || '';
-        if (content.includes('addEventListener("keydown"') || content.includes("addEventListener('keydown'")) result.patterns.push('keydown_listener');
-        if (content.includes('addEventListener("keypress"') || content.includes("addEventListener('keypress'")) result.patterns.push('keypress_listener');
-        if (content.includes('addEventListener("keyup"') || content.includes("addEventListener('keyup'")) result.patterns.push('keyup_listener');
-        if (content.includes('onkeydown') || content.includes('onkeypress') || content.includes('onkeyup')) result.patterns.push('inline_key_handler');
+        const seen = new Set();
+        keyRegexes.forEach(({ re, name }) => {
+          re.lastIndex = 0;
+          if (re.test(content) && !seen.has(name)) {
+            result.patterns.push(name);
+            seen.add(name);
+          }
+        });
       });
       if (result.patterns.length > 2) {
         result.issues.push({ type: 'potential_keylogging', patterns: result.patterns.slice(0, 10) });
@@ -1537,10 +1483,17 @@ class ComprehensiveWebsiteAnalyzer {
       const scripts = document.querySelectorAll('script:not([src])');
       scripts.forEach(script => {
         const content = script.textContent || '';
-        if (content.includes('card') && content.includes('number')) result.patterns.push('card_number_access');
-        if (content.includes('cvv') || content.includes('cvc')) result.patterns.push('cvv_access');
-        if (content.includes('payment') && content.includes('data')) result.patterns.push('payment_data_access');
-        if (content.includes('submit') && content.includes('card')) result.patterns.push('submit_card_data');
+        const magecartPatterns = [
+          { pattern: /\.value\s*=\s*.*card.*number/i, name: 'card_number_access' },
+          { pattern: /getElementById\s*\(\s*['"]ccnum/i, name: 'card_element_access' },
+          { pattern: /\.addEventListener\s*\(\s*['"]submit['"].*card/i, name: 'form_submit_capture' },
+          { pattern: /fetch\s*\(.*payment.*card/i, name: 'payment_data_exfil' }
+        ];
+        magecartPatterns.forEach(({ pattern, name }) => {
+          if (pattern.test(content)) {
+            result.patterns.push(name);
+          }
+        });
       });
       if (result.patterns.length > 0) {
         result.issues.push({ type: 'potential_formjacking', patterns: result.patterns.slice(0, 10) });
@@ -1556,9 +1509,7 @@ class ComprehensiveWebsiteAnalyzer {
       cookies.forEach(cookie => {
         const name = cookie.split('=')[0].trim().toLowerCase();
         if (name === 'sessionid' || name === 'jsessionid' || name === 'phpsessid' || name === 'asp.net_sessionid' || name === 'connect.sid') {
-          if (!cookie.includes('Secure') || !cookie.toLowerCase().includes('samesite')) {
-            result.issues.push({ type: 'weak_session_cookie', name });
-          }
+          result.issues.push({ type: 'session_cookie_detected', name, note: 'Cannot verify Secure/SameSite flags from JavaScript' });
         }
       });
     } catch (e) {}
@@ -1614,12 +1565,18 @@ class ComprehensiveWebsiteAnalyzer {
     const result = { issues: [] };
     try {
       const params = new URLSearchParams(window.location.search);
-      const sqlPatterns = ['union', 'select', 'insert', 'update', 'delete', 'drop', 'or 1=1', '--', '/*', '*/'];
+      const sqlPatterns = [
+        { pattern: /union\s+select/i, name: 'union_select' },
+        { pattern: /or\s+1\s*=\s*1/i, name: 'or_1_equals_1' },
+        { pattern: /;\s*drop\s+table/i, name: 'drop_table' },
+        { pattern: /'\s*or\s+''/i, name: 'or_empty_string' },
+        { pattern: /--\s*$/, name: 'sql_comment' },
+        { pattern: /\/\*.*\*\//, name: 'sql_block_comment' }
+      ];
       params.forEach((value, key) => {
-        const lower = value.toLowerCase();
-        sqlPatterns.forEach(pattern => {
-          if (lower.includes(pattern)) {
-            result.issues.push({ type: 'sqli_pattern_in_url', param: key, pattern });
+        sqlPatterns.forEach(({ pattern, name }) => {
+          if (pattern.test(value)) {
+            result.issues.push({ type: 'sqli_pattern_in_url', param: key, pattern: name });
           }
         });
       });
@@ -1633,9 +1590,16 @@ class ComprehensiveWebsiteAnalyzer {
       const scripts = document.querySelectorAll('script:not([src])');
       scripts.forEach(script => {
         const content = script.textContent || '';
-        if (content.includes('DOMParser') && content.includes('xml')) {
-          result.issues.push({ type: 'xml_parsing_detected' });
-        }
+        const xxePatterns = [
+          /DOMParser\s*\(\s*\)\s*\.parseFromString\s*\(/i,
+          /new\s+XMLSerializer/i,
+          /\.loadXML\s*\(/i
+        ];
+        xxePatterns.forEach(pattern => {
+          if (pattern.test(content)) {
+            result.issues.push({ type: 'xml_parsing_detected' });
+          }
+        });
       });
     } catch (e) {}
     return result;
@@ -1647,9 +1611,16 @@ class ComprehensiveWebsiteAnalyzer {
       const scripts = document.querySelectorAll('script:not([src])');
       scripts.forEach(script => {
         const content = script.textContent || '';
-        if (content.includes('fetch(') && (content.includes('localhost') || content.includes('127.0.0.1') || content.includes('0.0.0.0'))) {
-          result.issues.push({ type: 'potential_ssrf_pattern' });
-        }
+        const ssrfPatterns = [
+          /fetch\s*\(\s*['"]https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)/i,
+          /XMLHttpRequest.*open\s*\(\s*['"]GET['"]\s*,\s*['"]https?:\/\/(localhost|127\.0\.0\.1)/i,
+          /\$\.get\s*\(\s*['"]https?:\/\/(localhost|127\.0\.0\.1)/i
+        ];
+        ssrfPatterns.forEach(pattern => {
+          if (pattern.test(content)) {
+            result.issues.push({ type: 'potential_ssrf_pattern' });
+          }
+        });
       });
     } catch (e) {}
     return result;
@@ -1723,9 +1694,11 @@ class ComprehensiveWebsiteAnalyzer {
   deepDetectFingerprintJS() {
     const result = { issues: [] };
     try {
+      const fingerprintDomains = self.__privacyDomains?.fingerprintDomains || [];
       const scripts = this._getAllScriptSources();
       scripts.forEach(src => {
-        if (src.includes('fingerprint') || src.includes('fpjs') || src.includes('fingerprintjs')) {
+        const lower = src.toLowerCase();
+        if (fingerprintDomains.some(d => lower.includes(d)) || lower.includes('fingerprintjs')) {
           result.issues.push({ type: 'fingerprintjs_detected', source: src.substring(0, 200) });
         }
       });
@@ -2147,9 +2120,21 @@ class ComprehensiveWebsiteAnalyzer {
   deepDetectCookieSync() {
     const result = { issues: [] };
     try {
-      const iframes = document.querySelectorAll('iframe[src*="doubleclick"], iframe[src*="google"], iframe[src*="facebook"], iframe[src*="amazon"]');
-      if (iframes.length > 0) {
-        result.issues.push({ type: 'cookie_sync_iframes', count: iframes.length });
+      const domains = self.__privacyDomains || {};
+      const syncDomains = [
+        ...(domains.adNetworks || []).slice(0, 10),
+        ...(domains.socialDomains || []).slice(0, 5)
+      ];
+      const iframes = document.querySelectorAll('iframe');
+      let syncCount = 0;
+      iframes.forEach(iframe => {
+        const src = iframe.src || '';
+        if (syncDomains.some(d => src.includes(d))) {
+          syncCount++;
+        }
+      });
+      if (syncCount > 0) {
+        result.issues.push({ type: 'cookie_sync_iframes', count: syncCount });
       }
     } catch (e) {}
     return result;
@@ -2160,7 +2145,8 @@ class ComprehensiveWebsiteAnalyzer {
     try {
       const scripts = this._getAllScriptSources();
       scripts.forEach(src => {
-        if (src.includes('evercookie') || src.includes('evercookie_')) {
+        const lower = src.toLowerCase();
+        if (lower.includes('evercookie')) {
           result.issues.push({ type: 'evercookie_detected', source: src.substring(0, 200) });
         }
       });
@@ -2338,11 +2324,12 @@ class ComprehensiveWebsiteAnalyzer {
   deepDetectCryptoMiningExpanded() {
     const result = { miners: [], issues: [] };
     try {
-      const patterns = ['coinhive', 'cryptoloot', 'coin-imp', 'coinhave', 'coinerr', 'minero', 'webminepool', 'authedmine', 'jsecoin', 'cryptonight', 'monero', 'xmrig', 'coinpirate', 'crypto-loot', 'webminerpool'];
+      const patterns = self.__privacyDomains?.cryptominingPatterns || [];
       const scripts = this._getAllScriptSources();
       scripts.forEach(src => {
+        const lower = src.toLowerCase();
         patterns.forEach(pattern => {
-          if (src.toLowerCase().includes(pattern)) {
+          if (lower.includes(pattern.toLowerCase())) {
             result.miners.push({ pattern, source: src.substring(0, 200) });
           }
         });
@@ -2422,7 +2409,7 @@ class ComprehensiveWebsiteAnalyzer {
   }
 
   _isTrackingKey(key) {
-    const patterns = ['_ga', '_gid', '_gat', '_fbp', '_fbc', '_hjid', '__utma', 'utm_', '_clck', '_pk_', '_fbp_', 'fr', 'IDE', 'NID'];
+    const patterns = self.__privacyDomains?.trackingCookiePatterns || [];
     return patterns.some(p => key.toLowerCase().includes(p.toLowerCase()));
   }
 }
