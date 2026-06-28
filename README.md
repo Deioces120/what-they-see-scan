@@ -6,7 +6,7 @@
 
 > A powerful Chrome extension that analyzes what websites track, collect, and detect about you — then gives you actionable recommendations to stay safe online.
 
-![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue) ![Chrome](https://img.shields.io/badge/Chrome-Extension-green) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue) ![Chrome](https://img.shields.io/badge/Chrome-Extension-green) ![License](https://img.shields.io/badge/License-MIT-yellow) ![Version](https://img.shields.io/badge/Version-5.0-green)
 
 ---
 
