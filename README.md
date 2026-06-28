@@ -161,7 +161,7 @@ The extension features a dark, modern UI with color-coded severity badges, inter
 
 ## Technical Details
 
-- **Manifest Version:** 3
+- **Manifest Version:** 5
 - **Browser:** Google Chrome 114+ (and Chromium-based browsers)
 - **Architecture:** Service worker background + content script injection + Side Panel
 - **Scan Engine:** Rule-based analysis with 70+ regex-based detection patterns
