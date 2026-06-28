@@ -186,7 +186,13 @@ Contributions are welcome! Feel free to open issues or submit pull requests.
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU Affero General Public License v3.0 — see the [LICENSE](LICENSE) file for details.
+
+---
+
+## Commercial Licensing
+
+This project is available under the GNU AGPL v3 license. If you need a commercial license, proprietary integration, or custom development, please contact the author.
 
 ---
 
